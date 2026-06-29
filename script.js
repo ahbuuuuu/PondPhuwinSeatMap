@@ -1,16 +1,17 @@
 /* ════════════════════════════════════════
    POND PHUWIN · Space Soul-dyssey CONCERT
-   script.js — Supabase 即時同步版
+   script.js — Supabase 即時同步版 v2
    ════════════════════════════════════════ */
 
 // ────────────────────────────────────────────
 // Supabase 設定
 // ────────────────────────────────────────────
 const SUPABASE_URL = "https://jnpddmlnikjtvqrgbtjo.supabase.co";
-const SUPABASE_KEY = "sb_publishable_i9TmHKHUZdlSVnFgP21eTQ_dyYIKLml";
+const SUPABASE_ANON_KEY = "sb_publishable_i9TmHKHUZdlSVnFgP21eTQ_dyYIKLml";
 
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false }
+});
 
 // ────────────────────────────────────────────
 // State
@@ -28,49 +29,31 @@ let realtimeChannel = null;
 const i18n = {
     zh: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
-        count:     "已入座：",
-        unit:      " 人",
-        joined:    " 已入座！",
-        wait:      "✨ 等待觀眾入座...",
-        loading:   "⏳ 載入中...",
-        reg:       "登記座位",
-        confirm:   "確認登記",
-        cancel:    "取消",
-        close:     "關閉",
-        listTitle: "💖 名單列表",
-        ph:        "暱稱",
+        count:     "已入座：", unit: " 人",
+        joined:    " 已入座！", wait: "✨ 等待觀眾入座...",
+        loading:   "⏳ 載入中...", reg: "登記座位",
+        confirm:   "確認登記", cancel: "取消", close: "關閉",
+        listTitle: "💖 名單列表", ph: "暱稱",
         em:        "或選 Emoji（不上傳圖片時使用）",
         empty:     "目前還沒有人入座"
     },
     en: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
-        count:     "Seated: ",
-        unit:      " people",
-        joined:    " has joined!",
-        wait:      "✨ Waiting for audience...",
-        loading:   "⏳ Loading...",
-        reg:       "Register Seat",
-        confirm:   "Confirm",
-        cancel:    "Cancel",
-        close:     "Close",
-        listTitle: "💖 List",
-        ph:        "Nickname",
+        count:     "Seated: ", unit: " people",
+        joined:    " has joined!", wait: "✨ Waiting for audience...",
+        loading:   "⏳ Loading...", reg: "Register Seat",
+        confirm:   "Confirm", cancel: "Cancel", close: "Close",
+        listTitle: "💖 List", ph: "Nickname",
         em:        "Or pick an Emoji (if no photo)",
         empty:     "No audience yet"
     },
     th: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
-        count:     "จำนวนผู้ชม: ",
-        unit:      " คน",
-        joined:    " เข้าร่วมแล้ว!",
-        wait:      "✨ รอผู้ชมเข้าสู่ระบบ...",
-        loading:   "⏳ กำลังโหลด...",
-        reg:       "ลงทะเบียน",
-        confirm:   "ยืนยัน",
-        cancel:    "ยกเลิก",
-        close:     "ปิด",
-        listTitle: "💖 รายชื่อ",
-        ph:        "ชื่อเล่น",
+        count:     "จำนวนผู้ชม: ", unit: " คน",
+        joined:    " เข้าร่วมแล้ว!", wait: "✨ รอผู้ชมเข้าสู่ระบบ...",
+        loading:   "⏳ กำลังโหลด...", reg: "ลงทะเบียน",
+        confirm:   "ยืนยัน", cancel: "ยกเลิก", close: "ปิด",
+        listTitle: "💖 รายชื่อ", ph: "ชื่อเล่น",
         em:        "หรือเลือก Emoji (ถ้าไม่ได้อัปโหลดรูป)",
         empty:     "ยังไม่มีผู้ชม"
     }
@@ -84,22 +67,20 @@ function getLang() { return localStorage.getItem('lang') || 'zh'; }
 function setLang(l) {
     localStorage.setItem('lang', l);
     const d = i18n[l];
-
     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    const setAttr = (id, attr, val) => { const el = document.getElementById(id); if (el) el.setAttribute(attr, val); };
+    const setAttr = (id, a, v) => { const el = document.getElementById(id); if (el) el.setAttribute(a, v); };
 
-    setText('ui-title',             d.title);
-    setText('ui-m-title',           d.reg);
-    setText('ui-btn',               d.confirm);
-    setText('ui-cancel-btn',        d.cancel);
-    setText('ui-close-btn',         d.close);
-    setText('ui-list-title',        d.listTitle);
+    setText('ui-title', d.title);
+    setText('ui-m-title', d.reg);
+    setText('ui-btn', d.confirm);
+    setText('ui-cancel-btn', d.cancel);
+    setText('ui-close-btn', d.close);
+    setText('ui-list-title', d.listTitle);
     setText('ui-emoji-placeholder', d.em);
-    setAttr('name', 'placeholder',  d.ph);
+    setAttr('name', 'placeholder', d.ph);
 
     const bar = document.getElementById('notify-bar');
     if (bar && bar.dataset.isUser !== 'true') bar.textContent = d.wait;
-
     render();
 }
 
@@ -109,13 +90,7 @@ function setLang(l) {
 function openModal(id)  { document.getElementById(id).classList.add('show'); }
 function closeModal(id) {
     document.getElementById(id).classList.remove('show');
-    if (id === 'modal') resetForm();
-}
-function resetForm() {
-    ['name', 'img', 'emoji'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
+    if (id === 'modal') ['name','img','emoji'].forEach(i => { const el = document.getElementById(i); if(el) el.value=''; });
 }
 
 // ────────────────────────────────────────────
@@ -127,7 +102,6 @@ function switchDate() {
     const bar = document.getElementById('notify-bar');
     if (bar) { bar.dataset.isUser = 'false'; bar.textContent = i18n[getLang()].wait; }
     render();
-    subscribeRealtime(); // 重新訂閱當日資料
 }
 
 // ────────────────────────────────────────────
@@ -156,7 +130,7 @@ wrapper.addEventListener('click', (e) => {
 });
 
 // ────────────────────────────────────────────
-// Save Seat → 寫入 Supabase
+// Save Seat
 // ────────────────────────────────────────────
 async function save() {
     const nameEl = document.getElementById('name');
@@ -174,32 +148,38 @@ async function save() {
     if (file) {
         imgData = await new Promise((res, rej) => {
             const reader = new FileReader();
-            reader.onload  = (ev) => res(ev.target.result);
+            reader.onload  = ev => res(ev.target.result);
             reader.onerror = rej;
             reader.readAsDataURL(file);
         });
     }
 
-    const { error } = await db.from('seats').insert({
+    const payload = {
         date:     currentDate,
         name:     name,
         x:        lastPos.x,
         y:        lastPos.y,
-        emoji:    emoji || (imgData ? null : '👤'),
-        img_data: imgData
-    });
+        emoji:    emoji || null,
+        img_data: imgData || null
+    };
+
+    console.log('Inserting:', { ...payload, img_data: imgData ? '[base64]' : null });
+
+    const { data, error } = await db.from('seats').insert(payload).select();
 
     if (error) {
-        console.error('Insert error:', error);
-        if (bar) bar.textContent = "❌ 登記失敗，請再試一次";
+        console.error('Insert error:', JSON.stringify(error));
+        if (bar) bar.textContent = "❌ " + (error.message || '登記失敗，請再試一次');
     } else {
+        console.log('Insert success:', data);
         const d = i18n[getLang()];
         if (bar) bar.textContent = "✨ " + name + d.joined;
+        await loadSeats();
     }
 }
 
 // ────────────────────────────────────────────
-// 從 Supabase 載入資料
+// Load from Supabase
 // ────────────────────────────────────────────
 async function loadSeats() {
     const { data, error } = await db
@@ -207,7 +187,7 @@ async function loadSeats() {
         .select('*')
         .order('id', { ascending: true });
 
-    if (error) { console.error('Load error:', error); return; }
+    if (error) { console.error('Load error:', JSON.stringify(error)); return; }
 
     allData = { "8/21": [], "8/22": [], "8/23": [] };
     (data || []).forEach(row => {
@@ -218,21 +198,18 @@ async function loadSeats() {
 }
 
 // ────────────────────────────────────────────
-// Realtime 即時訂閱
+// Realtime
 // ────────────────────────────────────────────
 function subscribeRealtime() {
-    // 取消舊訂閱
-    if (realtimeChannel) {
-        db.removeChannel(realtimeChannel);
-    }
+    if (realtimeChannel) db.removeChannel(realtimeChannel);
 
     realtimeChannel = db
-        .channel('seats-changes')
+        .channel('seats-realtime')
         .on('postgres_changes',
             { event: '*', schema: 'public', table: 'seats' },
-            () => loadSeats()   // 任何變動（新增/刪除）都重新載入
+            () => loadSeats()
         )
-        .subscribe();
+        .subscribe((status) => console.log('Realtime status:', status));
 }
 
 // ────────────────────────────────────────────
@@ -247,12 +224,10 @@ function render() {
     if (countEl) countEl.textContent = d.count + seats.length + d.unit;
 
     document.querySelectorAll('.node').forEach(n => n.remove());
-
     const listEl = document.getElementById('seat-list');
     if (listEl) listEl.innerHTML = '';
 
     seats.forEach(s => {
-        // 地圖節點
         const node = document.createElement('div');
         node.className  = 'node';
         node.style.left = s.x + '%';
@@ -267,31 +242,29 @@ function render() {
         }
         wrapper.appendChild(node);
 
-        // 名單項目
         if (listEl) {
             const item = document.createElement('div');
             item.className = 'seat-item';
-
-            const nameSpan = document.createElement('span');
-            nameSpan.textContent = s.name;
-            item.appendChild(nameSpan);
+            const span = document.createElement('span');
+            span.textContent = s.name;
+            item.appendChild(span);
 
             if (isAdmin) {
-                const delBtn = document.createElement('button');
-                delBtn.className   = 'btn-del';
-                delBtn.textContent = '✕';
-                delBtn.onclick     = () => del(s.id);
-                item.appendChild(delBtn);
+                const btn = document.createElement('button');
+                btn.className = 'btn-del';
+                btn.textContent = '✕';
+                btn.onclick = () => del(s.id);
+                item.appendChild(btn);
             }
             listEl.appendChild(item);
         }
     });
 
     if (listEl && seats.length === 0) {
-        const empty = document.createElement('p');
-        empty.style.cssText = 'text-align:center; color:rgba(255,255,255,0.4); font-size:13px; margin:20px 0;';
-        empty.textContent = d.empty;
-        listEl.appendChild(empty);
+        const p = document.createElement('p');
+        p.style.cssText = 'text-align:center;color:rgba(255,255,255,0.4);font-size:13px;margin:20px 0;';
+        p.textContent = d.empty;
+        listEl.appendChild(p);
     }
 }
 
@@ -319,8 +292,8 @@ function toggleAdmin() {
 
 async function del(id) {
     const { error } = await db.from('seats').delete().eq('id', id);
-    if (error) { console.error('Delete error:', error); }
-    // Realtime 會自動觸發 loadSeats()，不需要手動 render
+    if (error) console.error('Delete error:', error);
+    else await loadSeats();
 }
 
 // ────────────────────────────────────────────
@@ -336,3 +309,4 @@ window.onload = async () => {
         bar.textContent = i18n[getLang()].wait;
     }
 };
+
