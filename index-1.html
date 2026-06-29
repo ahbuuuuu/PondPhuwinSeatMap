@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0b0c10">
+    <title>POND PHUWIN · Space Soul-dyssey CONCERT</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+
+    <!-- ── Header ── -->
+    <header>
+        <h1 id="ui-title">POND PHUWIN · Space Soul-dyssey CONCERT</h1>
+        <div class="control-row">
+            <select id="date-select" onchange="switchDate()">
+                <option value="8/21">8/21</option>
+                <option value="8/22">8/22</option>
+                <option value="8/23">8/23</option>
+            </select>
+            <div class="lang-group">
+                <button class="btn-ui" onclick="setLang('zh')">中</button>
+                <button class="btn-ui" onclick="setLang('en')">EN</button>
+                <button class="btn-ui" onclick="setLang('th')">TH</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── Notify Bar ── -->
+    <div id="notify-bar">✨ 等待觀眾入座...</div>
+
+    <!-- ── Seat Map ── -->
+    <div class="map-wrapper" id="map-wrapper">
+        <img id="seat-img" src="seatmap.jpg" alt="Seat Map">
+    </div>
+
+    <!-- ── Stats ── -->
+    <div class="stats-area">
+        <h3 id="ui-count-label">已入座：0 人</h3>
+        <button class="btn-list" onclick="openModal('list-modal')">💖 List</button>
+    </div>
+
+</div>
+
+<!-- ── 登記座位 Modal ── -->
+<div class="modal" id="modal">
+    <div class="modal-content">
+        <h3 id="ui-m-title">登記座位</h3>
+        <input  class="form-input" type="text"   id="name" placeholder="暱稱">
+        <input  class="form-input" type="file"   id="img"  accept="image/*">
+        <select class="form-input" id="emoji">
+            <option value="" id="ui-emoji-placeholder">或選 Emoji（不上傳圖片時使用）</option>
+            <option value="🐻">🐻 熊熊</option>
+            <option value="🐼">🐼 熊貓</option>
+            <option value="🐱">🐱 小貓</option>
+            <option value="🐶">🐶 小狗</option>
+            <option value="🧡">🧡 橘心</option>
+            <option value="🤍">🤍 白心</option>
+            <option value="🌙">🌙 月亮</option>
+            <option value="⭐">⭐ 星星</option>
+        </select>
+        <button class="btn-confirm"   id="ui-btn"        onclick="save()">確認登記</button>
+        <button class="btn-secondary" id="ui-cancel-btn" onclick="closeModal('modal')">取消</button>
+    </div>
+</div>
+
+<!-- ── 名單 Modal ── -->
+<div class="modal" id="list-modal">
+    <div class="modal-content">
+        <h3 id="ui-list-title">💖 名單列表</h3>
+        <div id="seat-list"></div>
+        <hr class="divider">
+        <button class="btn-secondary" id="ui-close-btn" onclick="closeModal('list-modal')" style="margin-bottom:6px;">關閉</button>
+        <button class="btn-ui" onclick="toggleAdmin()" style="width:100%; padding:9px; font-size:13px;">⚙️ Admin</button>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
