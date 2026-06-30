@@ -454,3 +454,30 @@ h1 {
 }
 
 .chat-overlay.show { display: block; }
+
+/* ════════════════════════════════════════
+   截圖專用模式（透過分享連結進入）
+   ════════════════════════════════════════ */
+
+body.screenshot-mode {
+    padding: 10px;
+}
+
+body.screenshot-mode #notify-bar,
+body.screenshot-mode .lang-group,
+body.screenshot-mode .stats-area,
+body.screenshot-mode #date-select,
+body.screenshot-mode .chat-toggle-btn,
+body.screenshot-mode #name-tooltip {
+    display: none !important;
+}
+
+body.screenshot-mode .map-wrapper {
+    cursor: default;
+    pointer-events: none;
+}
+
+body.screenshot-mode .node {
+    pointer-events: none;
+    cursor: default;
+}
