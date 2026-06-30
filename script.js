@@ -198,18 +198,12 @@ async function loadSeats() {
 }
 
 // ────────────────────────────────────────────
-// Realtime
+// 輪詢模式（每 15 秒自動重新載入，穩定不斷線）
 // ────────────────────────────────────────────
 function subscribeRealtime() {
-    if (realtimeChannel) db.removeChannel(realtimeChannel);
-
-    realtimeChannel = db
-        .channel('seats-realtime')
-        .on('postgres_changes',
-            { event: '*', schema: 'public', table: 'seats' },
-            () => loadSeats()
-        )
-        .subscribe((status) => console.log('Realtime status:', status));
+    if (realtimeChannel) clearInterval(realtimeChannel);
+    realtimeChannel = setInterval(() => loadSeats(), 15000);
+    console.log('Polling mode: refresh every 15s');
 }
 
 // ────────────────────────────────────────────
