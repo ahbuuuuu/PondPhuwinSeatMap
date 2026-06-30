@@ -352,7 +352,158 @@ async function switchDate() {
 
 
 /* ────────────────────────────────────────────
-   7. 地圖點擊（新增座位）
+   7. 地圖縮放與拖曳（雙指縮放 / 拖曳平移 / 滾輪 / 按鈕）
+   ──────────────────────────────────────────── */
+const mapViewport = document.getElementById('map-viewport');
+const mapInner = document.getElementById('map-inner');
+
+let mapScale = 1;
+let mapTranslateX = 0;
+let mapTranslateY = 0;
+
+const MAP_MIN_SCALE = 1;
+const MAP_MAX_SCALE = 4;
+
+function applyMapTransform() {
+    mapInner.style.transform = `translate(${mapTranslateX}px, ${mapTranslateY}px) scale(${mapScale})`;
+}
+
+// 縮放時把超出邊界的位移夾回合理範圍，避免地圖被拖出視窗外太多
+function clampMapTranslate() {
+    const viewportRect = mapViewport.getBoundingClientRect();
+    const maxX = 0;
+    const minX = viewportRect.width - viewportRect.width * mapScale;
+    const maxY = 0;
+    const minY = viewportRect.height - viewportRect.height * mapScale;
+
+    mapTranslateX = Math.min(maxX, Math.max(minX, mapTranslateX));
+    mapTranslateY = Math.min(maxY, Math.max(minY, mapTranslateY));
+}
+
+function zoomMap(factor, centerX, centerY) {
+    const viewportRect = mapViewport.getBoundingClientRect();
+    const cx = centerX !== undefined ? centerX - viewportRect.left : viewportRect.width / 2;
+    const cy = centerY !== undefined ? centerY - viewportRect.top : viewportRect.height / 2;
+
+    const newScale = Math.min(MAP_MAX_SCALE, Math.max(MAP_MIN_SCALE, mapScale * factor));
+    const actualFactor = newScale / mapScale;
+
+    // 讓縮放以指定中心點為基準，而不是永遠以左上角為基準
+    mapTranslateX = cx - (cx - mapTranslateX) * actualFactor;
+    mapTranslateY = cy - (cy - mapTranslateY) * actualFactor;
+    mapScale = newScale;
+
+    clampMapTranslate();
+    applyMapTransform();
+}
+
+function resetMapZoom() {
+    mapScale = 1;
+    mapTranslateX = 0;
+    mapTranslateY = 0;
+    applyMapTransform();
+}
+
+// ── 滑鼠滾輪縮放（桌機）──
+mapViewport.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.15 : 0.87;
+    zoomMap(factor, e.clientX, e.clientY);
+}, { passive: false });
+
+// ── 觸控：拖曳平移 + 雙指縮放 ──
+let touchState = null; // 'pan' | 'pinch' | null
+let lastPanX = 0, lastPanY = 0;
+let lastPinchDist = 0;
+let isPossibleTap = false; // 用來分辨「點擊新增座位」還是「拖曳地圖」
+
+function getTouchDist(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+mapViewport.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+        touchState = 'pan';
+        isPossibleTap = true; // 單指剛開始，先假設可能是點擊
+        lastPanX = e.touches[0].clientX;
+        lastPanY = e.touches[0].clientY;
+    } else if (e.touches.length === 2) {
+        touchState = 'pinch';
+        isPossibleTap = false;
+        lastPinchDist = getTouchDist(e.touches);
+    }
+}, { passive: true });
+
+mapViewport.addEventListener('touchmove', (e) => {
+    if (touchState === 'pan' && e.touches.length === 1) {
+        const dx = e.touches[0].clientX - lastPanX;
+        const dy = e.touches[0].clientY - lastPanY;
+
+        // 移動超過一點點距離，視為拖曳而非單純點擊
+        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) isPossibleTap = false;
+
+        if (mapScale > 1) {
+            e.preventDefault();
+            mapTranslateX += dx;
+            mapTranslateY += dy;
+            clampMapTranslate();
+            applyMapTransform();
+        }
+
+        lastPanX = e.touches[0].clientX;
+        lastPanY = e.touches[0].clientY;
+    } else if (touchState === 'pinch' && e.touches.length === 2) {
+        e.preventDefault();
+        const dist = getTouchDist(e.touches);
+        const factor = dist / lastPinchDist;
+        const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        zoomMap(factor, cx, cy);
+        lastPinchDist = dist;
+    }
+}, { passive: false });
+
+mapViewport.addEventListener('touchend', () => {
+    touchState = null;
+});
+
+// ── 桌機：滑鼠拖曳平移（放大狀態下）──
+let isMouseDragging = false;
+let mouseDragMoved = false;
+let lastMouseX = 0, lastMouseY = 0;
+
+mapViewport.addEventListener('mousedown', (e) => {
+    if (mapScale <= 1) return;
+    isMouseDragging = true;
+    mouseDragMoved = false;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (!isMouseDragging) return;
+    const dx = e.clientX - lastMouseX;
+    const dy = e.clientY - lastMouseY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) mouseDragMoved = true;
+
+    mapTranslateX += dx;
+    mapTranslateY += dy;
+    clampMapTranslate();
+    applyMapTransform();
+
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+});
+
+window.addEventListener('mouseup', () => {
+    isMouseDragging = false;
+});
+
+
+/* ────────────────────────────────────────────
+   7-2. 地圖點擊（新增座位）
    ──────────────────────────────────────────── */
 const wrapper = document.getElementById('map-wrapper');
 
@@ -366,6 +517,10 @@ wrapper.addEventListener('touchstart', (e) => {
 }, { passive: true });
 
 wrapper.addEventListener('click', (e) => {
+    // 剛剛是拖曳地圖造成的點擊事件，不應該觸發新增座位
+    if (!isPossibleTap && e.pointerType === 'touch') return;
+    if (mouseDragMoved && e.pointerType !== 'touch') { mouseDragMoved = false; return; }
+
     // 桌機滑鼠點擊：pointerType 不是 touch，需要在這裡取座標
     if (e.pointerType !== 'touch') {
         const rect = wrapper.getBoundingClientRect();
@@ -726,13 +881,24 @@ function jumpToSeat(id) {
     const node = wrapper.querySelector(`.node[data-id="${id}"]`);
     if (!node) return;
 
-    node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // 自動放大並把該座位移到視窗正中央（取代原本頁面捲動的做法）
+    const seat = (allData[currentDate] || []).find(s => s.id === id);
+    if (seat) {
+        const viewportRect = mapViewport.getBoundingClientRect();
+        const targetScale = Math.max(mapScale, 2.2);
+
+        mapScale = Math.min(MAP_MAX_SCALE, targetScale);
+        mapTranslateX = viewportRect.width / 2 - (seat.x / 100) * viewportRect.width * mapScale;
+        mapTranslateY = viewportRect.height / 2 - (seat.y / 100) * viewportRect.height * mapScale;
+
+        clampMapTranslate();
+        applyMapTransform();
+    }
+
     node.classList.remove('highlight');
     void node.offsetWidth; // 強制重啟動畫
     node.classList.add('highlight');
 
-    const seats = allData[currentDate] || [];
-    const seat = seats.find(s => s.id === id);
     if (seat) showNameTooltip(node, seat.name, 3000);
 
     setTimeout(() => node.classList.remove('highlight'), 3600);
