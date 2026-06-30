@@ -48,6 +48,7 @@
             <button class="map-zoom-btn" onclick="zoomMap(1.3)">＋</button>
             <button class="map-zoom-btn" onclick="zoomMap(0.77)">－</button>
             <button class="map-zoom-btn map-zoom-reset" onclick="resetMapZoom()" id="ui-zoom-reset">⤢</button>
+            <button class="map-zoom-btn" id="ui-toggle-avatars" onclick="toggleAvatarsVisibility()">👁️</button>
         </div>
     </div>
     <div id="name-tooltip" class="name-tooltip"></div>
@@ -56,6 +57,7 @@
     <div class="stats-area">
         <h3 id="ui-count-label">已入座：0 人</h3>
         <div class="stats-btn-group">
+            <button class="btn-list" id="ui-add-seat-btn" onclick="openAddSeatFromButton()">➕ 新增座位</button>
             <button class="btn-list" onclick="openModal('list-modal')">💖 List</button>
             <button class="btn-list btn-list-outline" id="ui-mine-btn" onclick="openModal('mine-modal')">🔑 我的座位</button>
         </div>
