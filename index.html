@@ -38,8 +38,17 @@
     <div id="notify-bar">⏳ 載入中...</div>
 
     <!-- ── Seat Map ── -->
-    <div class="map-wrapper" id="map-wrapper">
-        <img id="seat-img" src="seatmap.jpg" alt="Seat Map">
+    <div class="map-viewport" id="map-viewport">
+        <div class="map-inner" id="map-inner">
+            <div class="map-wrapper" id="map-wrapper">
+                <img id="seat-img" src="seatmap.jpg" alt="Seat Map">
+            </div>
+        </div>
+        <div class="map-zoom-controls">
+            <button class="map-zoom-btn" onclick="zoomMap(1.3)">＋</button>
+            <button class="map-zoom-btn" onclick="zoomMap(0.77)">－</button>
+            <button class="map-zoom-btn map-zoom-reset" onclick="resetMapZoom()" id="ui-zoom-reset">⤢</button>
+        </div>
     </div>
     <div id="name-tooltip" class="name-tooltip"></div>
 
