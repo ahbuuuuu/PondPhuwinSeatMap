@@ -96,12 +96,13 @@ function closeModal(id) {
 // ────────────────────────────────────────────
 // Date Switch
 // ────────────────────────────────────────────
-function switchDate() {
+async function switchDate() {
     currentDate = document.getElementById('date-select').value;
     lastRegisteredName = "";
     const bar = document.getElementById('notify-bar');
-    if (bar) { bar.dataset.isUser = 'false'; bar.textContent = i18n[getLang()].wait; }
-    render();
+    if (bar) { bar.dataset.isUser = 'false'; bar.textContent = i18n[getLang()].loading; }
+    await loadSeats();
+    if (bar && bar.dataset.isUser !== 'true') bar.textContent = i18n[getLang()].wait;
 }
 
 // ────────────────────────────────────────────
@@ -163,6 +164,17 @@ async function save() {
     const name   = (nameEl && nameEl.value.trim()) ? nameEl.value.trim() : "Anonymous";
     const file   = document.getElementById('img').files[0];
     const emoji  = document.getElementById('emoji').value;
+
+    if (file) {
+        if (!file.type.startsWith('image/')) {
+            alert('請上傳圖片檔案（jpg / png 等）');
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            alert('圖片檔案過大，請選擇 10MB 以下的圖片');
+            return;
+        }
+    }
 
     lastRegisteredName = name;
     closeModal('modal');
@@ -320,10 +332,34 @@ function toggleAdmin() {
 }
 
 async function del(id) {
+    // 找出該座位是否有上傳圖片，連同 Storage 一起刪除
+    const seat = (allData[currentDate] || []).find(s => s.id === id);
+    if (seat && seat.img_data && seat.img_data.includes('/avatars/')) {
+        const fileName = seat.img_data.split('/avatars/')[1];
+        if (fileName) {
+            await db.storage.from('avatars').remove([fileName]);
+        }
+    }
+
     const { error } = await db.from('seats').delete().eq('id', id);
     if (error) console.error('Delete error:', error);
     else await loadSeats();
 }
+
+
+// ────────────────────────────────────────────
+// 點擊背景關閉 Modal
+// ────────────────────────────────────────────
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('show');
+            if (modal.id === 'modal') {
+                ['name','img','emoji'].forEach(i => { const el = document.getElementById(i); if(el) el.value=''; });
+            }
+        }
+    });
+});
 
 // ────────────────────────────────────────────
 // Init
