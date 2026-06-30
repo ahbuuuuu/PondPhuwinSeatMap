@@ -35,7 +35,29 @@ const i18n = {
         confirm:   "確認登記", cancel: "取消", close: "關閉",
         listTitle: "💖 名單列表", ph: "暱稱",
         em:        "或選 Emoji（不上傳圖片時使用）",
-        empty:     "目前還沒有人入座"
+        empty:     "目前還沒有人入座",
+        mineBtn:   "🔑 我的座位",
+        mineTitle: "🔑 我的座位",
+        minePh:    "暱稱",
+        minePinPh: "4 位數密碼",
+        mineQuery: "查詢",
+        mineEmptyInput: "請輸入暱稱和密碼",
+        mineLoading: "⏳ 查詢中...",
+        mineNotFound: "❌ 找不到符合的座位，請確認暱稱與密碼",
+        mineDate:  "場次",
+        mineName:  "暱稱",
+        mineEdit:  "✏️ 改名",
+        mineDelete:"🗑️ 刪除",
+        minePromptNewName: "輸入新的暱稱：",
+        mineNameEmpty: "暱稱不能空白",
+        mineUpdateFail: "修改失敗：",
+        mineUpdateOk: "✅ 已更新暱稱",
+        mineDeleteConfirm: "確定要刪除這個座位嗎？此動作無法復原。",
+        mineDeleteFail: "刪除失敗：",
+        mineDeleteOk: "✅ 已刪除座位",
+        pinSuccessTitle: "🎉 登記成功！",
+        pinSuccessDesc:  "請記住這組密碼，之後可用來修改或刪除你的座位：",
+        pinConfirmBtn:   "我記住了"
     },
     en: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -45,7 +67,29 @@ const i18n = {
         confirm:   "Confirm", cancel: "Cancel", close: "Close",
         listTitle: "💖 List", ph: "Nickname",
         em:        "Or pick an Emoji (if no photo)",
-        empty:     "No audience yet"
+        empty:     "No audience yet",
+        mineBtn:   "🔑 My Seat",
+        mineTitle: "🔑 My Seat",
+        minePh:    "Nickname",
+        minePinPh: "4-digit PIN",
+        mineQuery: "Search",
+        mineEmptyInput: "Please enter nickname and PIN",
+        mineLoading: "⏳ Searching...",
+        mineNotFound: "❌ No matching seat found, please check nickname and PIN",
+        mineDate:  "Date",
+        mineName:  "Nickname",
+        mineEdit:  "✏️ Edit Name",
+        mineDelete:"🗑️ Delete",
+        minePromptNewName: "Enter new nickname:",
+        mineNameEmpty: "Nickname cannot be empty",
+        mineUpdateFail: "Update failed: ",
+        mineUpdateOk: "✅ Nickname updated",
+        mineDeleteConfirm: "Are you sure you want to delete this seat? This cannot be undone.",
+        mineDeleteFail: "Delete failed: ",
+        mineDeleteOk: "✅ Seat deleted",
+        pinSuccessTitle: "🎉 Registered!",
+        pinSuccessDesc:  "Please remember this PIN — you can use it later to edit or delete your seat:",
+        pinConfirmBtn:   "Got it"
     },
     th: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -55,7 +99,29 @@ const i18n = {
         confirm:   "ยืนยัน", cancel: "ยกเลิก", close: "ปิด",
         listTitle: "💖 รายชื่อ", ph: "ชื่อเล่น",
         em:        "หรือเลือก Emoji (ถ้าไม่ได้อัปโหลดรูป)",
-        empty:     "ยังไม่มีผู้ชม"
+        empty:     "ยังไม่มีผู้ชม",
+        mineBtn:   "🔑 ที่นั่งของฉัน",
+        mineTitle: "🔑 ที่นั่งของฉัน",
+        minePh:    "ชื่อเล่น",
+        minePinPh: "รหัส 4 หลัก",
+        mineQuery: "ค้นหา",
+        mineEmptyInput: "กรุณากรอกชื่อเล่นและรหัส",
+        mineLoading: "⏳ กำลังค้นหา...",
+        mineNotFound: "❌ ไม่พบที่นั่งที่ตรงกัน กรุณาตรวจสอบชื่อเล่นและรหัส",
+        mineDate:  "วันที่",
+        mineName:  "ชื่อเล่น",
+        mineEdit:  "✏️ แก้ไขชื่อ",
+        mineDelete:"🗑️ ลบ",
+        minePromptNewName: "กรอกชื่อเล่นใหม่:",
+        mineNameEmpty: "ชื่อเล่นต้องไม่เว้นว่าง",
+        mineUpdateFail: "แก้ไขล้มเหลว: ",
+        mineUpdateOk: "✅ อัปเดตชื่อเล่นแล้ว",
+        mineDeleteConfirm: "ยืนยันลบที่นั่งนี้หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้",
+        mineDeleteFail: "ลบล้มเหลว: ",
+        mineDeleteOk: "✅ ลบที่นั่งแล้ว",
+        pinSuccessTitle: "🎉 ลงทะเบียนสำเร็จ!",
+        pinSuccessDesc:  "กรุณาจำรหัสนี้ไว้ ใช้สำหรับแก้ไขหรือลบที่นั่งของคุณในอนาคต:",
+        pinConfirmBtn:   "จำแล้ว"
     }
 };
 
@@ -78,6 +144,16 @@ function setLang(l) {
     setText('ui-list-title', d.listTitle);
     setText('ui-emoji-placeholder', d.em);
     setAttr('name', 'placeholder', d.ph);
+
+    setText('ui-mine-btn', d.mineBtn);
+    setText('ui-mine-title', d.mineTitle);
+    setAttr('mine-name', 'placeholder', d.minePh);
+    setAttr('mine-pin', 'placeholder', d.minePinPh);
+    setText('ui-mine-query', d.mineQuery);
+    setText('ui-mine-close', d.close);
+    setText('ui-pin-title', d.pinSuccessTitle);
+    setText('ui-pin-desc', d.pinSuccessDesc);
+    setText('ui-pin-confirm', d.pinConfirmBtn);
 
     const bar = document.getElementById('notify-bar');
     if (bar && bar.dataset.isUser !== 'true') bar.textContent = d.wait;
@@ -457,16 +533,17 @@ async function verifyMine() {
     const nameEl = document.getElementById('mine-name');
     const pinEl  = document.getElementById('mine-pin');
     const resultEl = document.getElementById('mine-result');
+    const d = i18n[getLang()];
 
     const name = nameEl.value.trim();
     const pin  = pinEl.value.trim();
 
     if (!name || !pin) {
-        resultEl.innerHTML = '<p style="color:#ff6b6b; font-size:13px;">請輸入暱稱和密碼</p>';
+        resultEl.innerHTML = `<p style="color:#ff6b6b; font-size:13px;">${d.mineEmptyInput}</p>`;
         return;
     }
 
-    resultEl.innerHTML = '<p style="color:rgba(255,255,255,0.6); font-size:13px;">⏳ 查詢中...</p>';
+    resultEl.innerHTML = `<p style="color:rgba(255,255,255,0.6); font-size:13px;">${d.mineLoading}</p>`;
 
     const { data, error } = await db
         .from('seats')
@@ -475,7 +552,7 @@ async function verifyMine() {
         .eq('pin', pin);
 
     if (error || !data || data.length === 0) {
-        resultEl.innerHTML = '<p style="color:#ff6b6b; font-size:13px;">❌ 找不到符合的座位，請確認暱稱與密碼</p>';
+        resultEl.innerHTML = `<p style="color:#ff6b6b; font-size:13px;">${d.mineNotFound}</p>`;
         verifiedSeat = null;
         return;
     }
@@ -488,19 +565,19 @@ async function verifyMine() {
 
         const info = document.createElement('p');
         info.style.cssText = 'font-size:13px; margin:0 0 8px;';
-        info.textContent = `📍 場次 ${seat.date}　暱稱：${seat.name}`;
+        info.textContent = `📍 ${d.mineDate} ${seat.date}　${d.mineName}：${seat.name}`;
         card.appendChild(info);
 
         const btnRow = document.createElement('div');
         btnRow.style.cssText = 'display:flex; gap:8px;';
 
         const editBtn = document.createElement('button');
-        editBtn.textContent = '✏️ 改名';
+        editBtn.textContent = d.mineEdit;
         editBtn.style.cssText = 'flex:1; padding:8px; border-radius:8px; border:1px solid var(--main); background:transparent; color:var(--main); font-size:12px;';
         editBtn.onclick = () => editMySeat(seat);
 
         const delBtn = document.createElement('button');
-        delBtn.textContent = '🗑️ 刪除';
+        delBtn.textContent = d.mineDelete;
         delBtn.style.cssText = 'flex:1; padding:8px; border-radius:8px; border:none; background:rgba(255,60,60,0.7); color:#fff; font-size:12px;';
         delBtn.onclick = () => deleteMySeat(seat);
 
@@ -512,10 +589,11 @@ async function verifyMine() {
 }
 
 async function editMySeat(seat) {
-    const newName = prompt('輸入新的暱稱：', seat.name);
+    const d = i18n[getLang()];
+    const newName = prompt(d.minePromptNewName, seat.name);
     if (newName === null) return;
     const trimmed = newName.trim();
-    if (!trimmed) { alert('暱稱不能空白'); return; }
+    if (!trimmed) { alert(d.mineNameEmpty); return; }
 
     const { error } = await db
         .from('seats')
@@ -524,16 +602,17 @@ async function editMySeat(seat) {
         .eq('pin', seat.pin);
 
     if (error) {
-        alert('修改失敗：' + error.message);
+        alert(d.mineUpdateFail + error.message);
     } else {
-        alert('✅ 已更新暱稱');
+        alert(d.mineUpdateOk);
         await loadSeats();
         closeModal('mine-modal');
     }
 }
 
 async function deleteMySeat(seat) {
-    if (!confirm(`確定要刪除「${seat.name}」這個座位嗎？此動作無法復原。`)) return;
+    const d = i18n[getLang()];
+    if (!confirm(d.mineDeleteConfirm)) return;
 
     // 連同 Storage 圖片一起刪除
     if (seat.img_data && seat.img_data.includes('/avatars/')) {
@@ -548,9 +627,9 @@ async function deleteMySeat(seat) {
         .eq('pin', seat.pin);
 
     if (error) {
-        alert('刪除失敗：' + error.message);
+        alert(d.mineDeleteFail + error.message);
     } else {
-        alert('✅ 已刪除座位');
+        alert(d.mineDeleteOk);
         await loadSeats();
         closeModal('mine-modal');
     }
