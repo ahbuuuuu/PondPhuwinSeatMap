@@ -114,19 +114,17 @@
 </div>
 
 <!-- ════════════════════════════════════════
-     聊天抽屜（區域聊天 + 全場聊天室）
+     聊天抽屜（討論區，含區域篩選）
      ════════════════════════════════════════ -->
 
-<button class="chat-toggle-btn" id="ui-chat-toggle" style="top:42%;" onclick="openChat()">📍 區域聊天</button>
-<button class="chat-toggle-btn" id="ui-global-chat-toggle" style="top:58%; background:#fff; color:#000;" onclick="openGlobalChat()">🌐 全場聊天室</button>
+<button class="chat-toggle-btn" id="ui-chat-toggle" onclick="openChat()">💬 討論區</button>
 
 <div class="chat-overlay" id="chat-overlay" onclick="closeChat()"></div>
-<div class="chat-overlay" id="global-chat-overlay" onclick="closeGlobalChat()"></div>
 
-<!-- ── 區域聊天抽屜 ── -->
+<!-- ── 討論區抽屜 ── -->
 <div class="chat-drawer" id="chat-drawer">
     <div class="chat-drawer-header">
-        <h3 id="ui-chat-title">💬 聊天室</h3>
+        <h3 id="ui-chat-title">💬 討論區</h3>
         <button class="chat-close-btn" onclick="closeChat()">✕</button>
     </div>
 
@@ -230,20 +228,6 @@
         <input type="text" id="chat-name" class="chat-name-input" placeholder="暱稱">
         <input type="text" id="chat-input" placeholder="說點什麼...">
         <button class="chat-send-btn" id="ui-chat-send" onclick="sendChatMessage()">送出</button>
-    </div>
-</div>
-
-<!-- ── 全場聊天室抽屜（不分區域，所有人共用） ── -->
-<div class="chat-drawer" id="global-chat-drawer">
-    <div class="chat-drawer-header">
-        <h3 id="ui-global-chat-title">🌐 全場聊天室</h3>
-        <button class="chat-close-btn" onclick="closeGlobalChat()">✕</button>
-    </div>
-    <div class="chat-messages" id="global-chat-messages"></div>
-    <div class="chat-input-row">
-        <input type="text" id="global-chat-name" class="chat-name-input" placeholder="暱稱">
-        <input type="text" id="global-chat-input" placeholder="說點什麼...">
-        <button class="chat-send-btn" id="ui-global-chat-send" onclick="sendGlobalChatMessage()">送出</button>
     </div>
 </div>
 
