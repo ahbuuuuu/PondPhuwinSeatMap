@@ -201,16 +201,19 @@ async function save() {
         imgUrl = urlData.publicUrl;
     }
 
+    const pin = String(Math.floor(1000 + Math.random() * 9000)); // 4 位數密碼
+
     const payload = {
         date:     currentDate,
         name:     name,
         x:        lastPos.x,
         y:        lastPos.y,
         emoji:    emoji || null,
-        img_data: imgUrl || null
+        img_data: imgUrl || null,
+        pin:      pin
     };
 
-    console.log('Inserting:', payload);
+    console.log('Inserting:', { ...payload, pin: '[hidden]' });
 
     const { data, error } = await db.from('seats').insert(payload).select();
 
@@ -218,10 +221,15 @@ async function save() {
         console.error('Insert error:', JSON.stringify(error));
         if (bar) bar.textContent = "❌ " + (error.message || '登記失敗，請再試一次');
     } else {
-        console.log('Insert success:', data);
+        console.log('Insert success');
         const d = i18n[getLang()];
         if (bar) bar.textContent = "✨ " + name + d.joined;
         await loadSeats();
+
+        // 顯示密碼給使用者記住
+        const pinDisplay = document.getElementById('pin-display');
+        if (pinDisplay) pinDisplay.textContent = pin;
+        openModal('pin-modal');
     }
 }
 
@@ -438,6 +446,115 @@ async function del(id) {
     else await loadSeats();
 }
 
+
+
+// ────────────────────────────────────────────
+// 我的座位（憑暱稱 + 密碼查詢、修改、刪除）
+// ────────────────────────────────────────────
+let verifiedSeat = null; // 通過驗證後暫存目前操作的座位
+
+async function verifyMine() {
+    const nameEl = document.getElementById('mine-name');
+    const pinEl  = document.getElementById('mine-pin');
+    const resultEl = document.getElementById('mine-result');
+
+    const name = nameEl.value.trim();
+    const pin  = pinEl.value.trim();
+
+    if (!name || !pin) {
+        resultEl.innerHTML = '<p style="color:#ff6b6b; font-size:13px;">請輸入暱稱和密碼</p>';
+        return;
+    }
+
+    resultEl.innerHTML = '<p style="color:rgba(255,255,255,0.6); font-size:13px;">⏳ 查詢中...</p>';
+
+    const { data, error } = await db
+        .from('seats')
+        .select('*')
+        .eq('name', name)
+        .eq('pin', pin);
+
+    if (error || !data || data.length === 0) {
+        resultEl.innerHTML = '<p style="color:#ff6b6b; font-size:13px;">❌ 找不到符合的座位，請確認暱稱與密碼</p>';
+        verifiedSeat = null;
+        return;
+    }
+
+    // 可能同名同密碼有多筆（同一人登記多次），全部列出
+    resultEl.innerHTML = '';
+    data.forEach(seat => {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:rgba(255,255,255,0.05); border-radius:10px; padding:10px; margin-bottom:8px;';
+
+        const info = document.createElement('p');
+        info.style.cssText = 'font-size:13px; margin:0 0 8px;';
+        info.textContent = `📍 場次 ${seat.date}　暱稱：${seat.name}`;
+        card.appendChild(info);
+
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex; gap:8px;';
+
+        const editBtn = document.createElement('button');
+        editBtn.textContent = '✏️ 改名';
+        editBtn.style.cssText = 'flex:1; padding:8px; border-radius:8px; border:1px solid var(--main); background:transparent; color:var(--main); font-size:12px;';
+        editBtn.onclick = () => editMySeat(seat);
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '🗑️ 刪除';
+        delBtn.style.cssText = 'flex:1; padding:8px; border-radius:8px; border:none; background:rgba(255,60,60,0.7); color:#fff; font-size:12px;';
+        delBtn.onclick = () => deleteMySeat(seat);
+
+        btnRow.appendChild(editBtn);
+        btnRow.appendChild(delBtn);
+        card.appendChild(btnRow);
+        resultEl.appendChild(card);
+    });
+}
+
+async function editMySeat(seat) {
+    const newName = prompt('輸入新的暱稱：', seat.name);
+    if (newName === null) return;
+    const trimmed = newName.trim();
+    if (!trimmed) { alert('暱稱不能空白'); return; }
+
+    const { error } = await db
+        .from('seats')
+        .update({ name: trimmed })
+        .eq('id', seat.id)
+        .eq('pin', seat.pin);
+
+    if (error) {
+        alert('修改失敗：' + error.message);
+    } else {
+        alert('✅ 已更新暱稱');
+        await loadSeats();
+        closeModal('mine-modal');
+    }
+}
+
+async function deleteMySeat(seat) {
+    if (!confirm(`確定要刪除「${seat.name}」這個座位嗎？此動作無法復原。`)) return;
+
+    // 連同 Storage 圖片一起刪除
+    if (seat.img_data && seat.img_data.includes('/avatars/')) {
+        const fileName = seat.img_data.split('/avatars/')[1];
+        if (fileName) await db.storage.from('avatars').remove([fileName]);
+    }
+
+    const { error } = await db
+        .from('seats')
+        .delete()
+        .eq('id', seat.id)
+        .eq('pin', seat.pin);
+
+    if (error) {
+        alert('刪除失敗：' + error.message);
+    } else {
+        alert('✅ 已刪除座位');
+        await loadSeats();
+        closeModal('mine-modal');
+    }
+}
 
 // ────────────────────────────────────────────
 // 點擊背景關閉 Modal
