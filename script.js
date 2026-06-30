@@ -25,8 +25,7 @@ let lastPos = { x: 0, y: 0 };
 let allData = { "8/21": [], "8/22": [], "8/23": [] };
 
 let realtimeChannel = null;   // 座位輪詢計時器
-let chatPollTimer = null;     // 區域聊天室輪詢計時器
-let globalChatPollTimer = null; // 全場聊天室輪詢計時器
+let chatPollTimer = null;     // 討論區輪詢計時器
 let tooltipTimer = null;      // 暱稱提示框自動隱藏計時器
 
 let shareMode = false;            // 是否處於「分享模式」
@@ -82,8 +81,8 @@ const i18n = {
         pinConfirmBtn:   "我記住了",
 
         // 區域聊天室
-        chatToggleArea: "📍 區域聊天",
-        chatTitle:  "💬 聊天室",
+        chatToggleArea: "💬 討論區",
+        chatTitle:  "💬 討論區",
         chatSend:   "送出",
         chatNamePh: "暱稱",
         chatInputPh: "說點什麼...",
@@ -93,10 +92,6 @@ const i18n = {
         chatViewLabel: "👀 正在觀看",
         chatSendLabel: "📤 發送到",
         chatZoneAll: "🌐 全部區域（ALL）",
-
-        // 全場聊天室
-        globalChatToggle: "🌐 全場聊天室",
-        globalChatTitle:  "🌐 全場聊天室",
 
         // 分享模式
         shareModeEnter: "分享模式",
@@ -144,8 +139,8 @@ const i18n = {
         pinSuccessDesc:  "Please remember this PIN — you can use it later to edit or delete your seat:",
         pinConfirmBtn:   "Got it",
 
-        chatToggleArea: "📍 Zone Chat",
-        chatTitle:  "💬 Chat Room",
+        chatToggleArea: "💬 Discussion",
+        chatTitle:  "💬 Discussion",
         chatSend:   "Send",
         chatNamePh: "Name",
         chatInputPh: "Say something...",
@@ -155,9 +150,6 @@ const i18n = {
         chatViewLabel: "👀 Viewing",
         chatSendLabel: "📤 Send to",
         chatZoneAll: "🌐 All Zones (ALL)",
-
-        globalChatToggle: "🌐 Global Chat",
-        globalChatTitle:  "🌐 Global Chat",
 
         shareModeEnter: "Share Mode",
         shareModeExit:  "Exit Share Mode",
@@ -204,8 +196,8 @@ const i18n = {
         pinSuccessDesc:  "กรุณาจำรหัสนี้ไว้ ใช้สำหรับแก้ไขหรือลบที่นั่งของคุณในอนาคต:",
         pinConfirmBtn:   "จำแล้ว",
 
-        chatToggleArea: "📍 แชทตามโซน",
-        chatTitle:  "💬 ห้องแชท",
+        chatToggleArea: "💬 กระดานสนทนา",
+        chatTitle:  "💬 กระดานสนทนา",
         chatSend:   "ส่ง",
         chatNamePh: "ชื่อเล่น",
         chatInputPh: "พิมพ์ข้อความ...",
@@ -215,9 +207,6 @@ const i18n = {
         chatViewLabel: "👀 กำลังดู",
         chatSendLabel: "📤 ส่งไปยัง",
         chatZoneAll: "🌐 ทุกโซน (ALL)",
-
-        globalChatToggle: "🌐 แชทรวม",
-        globalChatTitle:  "🌐 แชทรวม",
 
         shareModeEnter: "โหมดแชร์",
         shareModeExit:  "ออกจากโหมดแชร์",
@@ -270,7 +259,7 @@ function setLang(l) {
     setText('ui-pin-desc', d.pinSuccessDesc);
     setText('ui-pin-confirm', d.pinConfirmBtn);
 
-    // 區域聊天室
+    // 討論區
     setText('ui-chat-toggle', d.chatToggleArea);
     setText('ui-chat-title', d.chatTitle);
     setText('ui-chat-send', d.chatSend);
@@ -279,13 +268,6 @@ function setLang(l) {
     setText('ui-chat-view-label', d.chatViewLabel);
     setText('ui-chat-send-label', d.chatSendLabel);
     setText('ui-chat-zone-all', d.chatZoneAll);
-
-    // 全場聊天室
-    setText('ui-global-chat-toggle', d.globalChatToggle);
-    setText('ui-global-chat-title', d.globalChatTitle);
-    setText('ui-global-chat-send', d.chatSend);
-    setAttr('global-chat-name', 'placeholder', d.chatNamePh);
-    setAttr('global-chat-input', 'placeholder', d.chatInputPh);
 
     // 分享模式
     if (!shareMode) {
@@ -1331,8 +1313,15 @@ function toggleAdmin() {
 }
 
 async function del(id) {
-    // 找出該座位是否有上傳圖片，連同 Storage 一起刪除
     const seat = (allData[currentDate] || []).find(s => s.id === id);
+    const lang = getLang();
+    const confirmMsg = seat
+        ? (lang === 'th' ? `ยืนยันลบ "${seat.name}" หรือไม่? ไม่สามารถย้อนกลับได้` : lang === 'en' ? `Delete "${seat.name}"? This cannot be undone.` : `確定要刪除「${seat.name}」嗎？此動作無法復原。`)
+        : (lang === 'th' ? 'ยืนยันลบที่นั่งนี้หรือไม่?' : lang === 'en' ? 'Delete this seat?' : '確定要刪除這個座位嗎？');
+
+    if (!confirm(confirmMsg)) return;
+
+    // 找出該座位是否有上傳圖片，連同 Storage 一起刪除
     if (seat && seat.img_data && seat.img_data.includes('/avatars/')) {
         const fileName = seat.img_data.split('/avatars/')[1];
         if (fileName) await db.storage.from('avatars').remove([fileName]);
@@ -1468,130 +1457,14 @@ async function deleteChatMessage(id) {
 }
 
 
-/* ────────────────────────────────────────────
-   18. 全場聊天室（不分場次、不分區域，所有人共用）
-   ──────────────────────────────────────────── */
-function openGlobalChat() {
-    document.getElementById('global-chat-drawer').classList.add('open');
-    document.getElementById('global-chat-overlay').classList.add('show');
-    loadGlobalChatMessages();
-    if (globalChatPollTimer) clearInterval(globalChatPollTimer);
-    globalChatPollTimer = setInterval(loadGlobalChatMessages, 8000);
-}
 
-function closeGlobalChat() {
-    document.getElementById('global-chat-drawer').classList.remove('open');
-    document.getElementById('global-chat-overlay').classList.remove('show');
-    if (globalChatPollTimer) { clearInterval(globalChatPollTimer); globalChatPollTimer = null; }
-}
 
-async function loadGlobalChatMessages() {
-    // 不限定 date（跨場次共用），zone 固定為 GLOBAL
-    const { data, error } = await db
-        .from('chat_messages')
-        .select('*')
-        .eq('zone', 'GLOBAL')
-        .order('created_at', { ascending: true })
-        .limit(200);
-
-    if (error) { console.error('Global chat load error:', error); return; }
-
-    renderGlobalChatMessages(data || []);
-}
-
-function renderGlobalChatMessages(messages) {
-    const container = document.getElementById('global-chat-messages');
-    if (!container) return;
-
-    const wasAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 30;
-    container.innerHTML = '';
-    const d = i18n[getLang()];
-
-    if (messages.length === 0) {
-        const p = document.createElement('p');
-        p.style.cssText = 'text-align:center; color:rgba(255,255,255,0.4); font-size:13px; margin-top:20px;';
-        p.textContent = d.chatEmpty;
-        container.appendChild(p);
-        return;
-    }
-
-    messages.forEach(msg => {
-        const item = document.createElement('div');
-        item.className = 'chat-msg';
-
-        const nameEl = document.createElement('span');
-        nameEl.className = 'chat-msg-name';
-        nameEl.textContent = msg.name;
-        item.appendChild(nameEl);
-
-        const textEl = document.createElement('span');
-        textEl.className = 'chat-msg-text';
-        textEl.textContent = msg.message;
-        item.appendChild(textEl);
-
-        if (isAdmin) {
-            const delBtn = document.createElement('button');
-            delBtn.className = 'chat-msg-del';
-            delBtn.textContent = '✕';
-            delBtn.onclick = () => deleteGlobalChatMessage(msg.id);
-            item.appendChild(delBtn);
-        }
-
-        container.appendChild(item);
-    });
-
-    if (wasAtBottom) container.scrollTop = container.scrollHeight;
-}
-
-async function sendGlobalChatMessage() {
-    const nameEl = document.getElementById('global-chat-name');
-    const inputEl = document.getElementById('global-chat-input');
-    const d = i18n[getLang()];
-
-    const name = nameEl.value.trim();
-    const message = inputEl.value.trim();
-
-    if (!name || !message) {
-        alert(d.chatNeedInput);
-        return;
-    }
-
-    const { error } = await db.from('chat_messages').insert({
-        date: null,       // 全場聊天室不綁定特定場次
-        name: name,
-        message: message,
-        zone: 'GLOBAL'
-    });
-
-    if (error) {
-        console.error('Send global chat error:', error);
-        alert('送出失敗，請再試一次');
-        return;
-    }
-
-    inputEl.value = '';
-    await loadGlobalChatMessages();
-}
-
-async function deleteGlobalChatMessage(id) {
-    const { error } = await db.from('chat_messages').delete().eq('id', id);
-    if (error) console.error('Delete global chat error:', error);
-    else await loadGlobalChatMessages();
-}
-
-// Enter 鍵送出訊息（兩個聊天室都支援）
+// Enter 鍵送出訊息
 document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('chat-input');
     if (chatInput) {
         chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') sendChatMessage();
-        });
-    }
-
-    const globalChatInput = document.getElementById('global-chat-input');
-    if (globalChatInput) {
-        globalChatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') sendGlobalChatMessage();
         });
     }
 });
@@ -1603,7 +1476,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function enterScreenshotMode() {
     document.body.classList.add('screenshot-mode');
 
-    const hideIds = ['ui-chat-toggle', 'ui-global-chat-toggle', 'date-select'];
+    const hideIds = ['ui-chat-toggle', 'date-select'];
     hideIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
