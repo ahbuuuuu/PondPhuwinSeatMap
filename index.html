@@ -295,21 +295,82 @@
 </div>
 
 <!-- ════════════════════════════════════════
-     Modal：名單列表（含分享模式）
+     Modal：名單列表（含分享模式 + 區域統計）
      ════════════════════════════════════════ -->
 <div class="modal" id="list-modal">
     <div class="modal-content">
         <h3 id="ui-list-title">💖 名單列表</h3>
-        <input class="form-input" type="text" id="search-input" placeholder="🔍 搜尋暱稱..." oninput="renderList()">
 
-        <button class="btn-ui btn-full-compact" id="ui-share-toggle" onclick="toggleShareMode()">📤 分享模式</button>
-
-        <div id="share-toolbar" class="share-toolbar">
-            <p id="ui-share-hint" class="modal-hint">勾選想要分享的人，最多 10 位</p>
-            <button class="btn-confirm btn-confirm-compact" id="ui-share-generate" onclick="generateShareLink()">🔗 產生分享連結</button>
+        <!-- 分頁切換：名單列表 / 區域統計 -->
+        <div class="list-tab-row">
+            <button class="list-tab active" id="ui-tab-list" onclick="switchListTab('list')">📋 名單</button>
+            <button class="list-tab" id="ui-tab-stats" onclick="switchListTab('stats')">📊 區域統計</button>
         </div>
 
-        <div id="seat-list"></div>
+        <!-- ── 名單分頁 ── -->
+        <div id="list-tab-content">
+            <input class="form-input" type="text" id="search-input" placeholder="🔍 搜尋暱稱..." oninput="renderList()">
+
+            <button class="btn-ui btn-full-compact" id="ui-share-toggle" onclick="toggleShareMode()">📤 分享模式</button>
+
+            <div id="share-toolbar" class="share-toolbar">
+                <p id="ui-share-hint" class="modal-hint">勾選想要分享的人，最多 10 位</p>
+                <button class="btn-confirm btn-confirm-compact" id="ui-share-generate" onclick="generateShareLink()">🔗 產生分享連結</button>
+            </div>
+
+            <div id="seat-list"></div>
+        </div>
+
+        <!-- ── 區域統計分頁 ── -->
+        <div id="stats-tab-content" style="display:none;">
+            <select class="form-input" id="stats-zone-filter" onchange="renderZoneStats()">
+                <option value="" id="ui-stats-all-zones">📊 總表（全部區域）</option>
+                <option value="A1">A1</option>
+                <option value="A2">A2</option>
+                <option value="A3">A3</option>
+                <option value="A4">A4</option>
+                <option value="B1">B1</option>
+                <option value="B2">B2</option>
+                <option value="B3">B3</option>
+                <option value="C1">C1</option>
+                <option value="C2">C2</option>
+                <option value="C3">C3</option>
+                <option value="SB">SB</option>
+                <option value="SC">SC</option>
+                <option value="SD">SD</option>
+                <option value="SE">SE</option>
+                <option value="SF">SF</option>
+                <option value="SG">SG</option>
+                <option value="SH">SH</option>
+                <option value="SI">SI</option>
+                <option value="SJ">SJ</option>
+                <option value="SK">SK</option>
+                <option value="SL">SL</option>
+                <option value="SM">SM</option>
+                <option value="SN">SN</option>
+                <option value="FF">FF</option>
+                <option value="HH">HH</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+                <option value="F">F</option>
+                <option value="G">G</option>
+                <option value="H">H</option>
+                <option value="I">I</option>
+                <option value="J">J</option>
+                <option value="K">K</option>
+                <option value="L">L</option>
+                <option value="M">M</option>
+                <option value="N">N</option>
+                <option value="O">O</option>
+                <option value="P">P</option>
+                <option value="Q">Q</option>
+                <option value="R">R</option>
+                <option value="S">S</option>
+            </select>
+            <div id="zone-stats-list"></div>
+        </div>
+
         <hr class="divider">
         <button class="btn-secondary" id="ui-close-btn" onclick="closeModal('list-modal')" style="margin-bottom:6px;">關閉</button>
         <button class="btn-ui" onclick="toggleAdmin()" style="width:100%; padding:9px; font-size:13px;">⚙️ Admin</button>
