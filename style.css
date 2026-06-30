@@ -93,6 +93,12 @@ h1 {
     line-height: 1.4;
 }
 
+/* ── 地圖區域篩選選單 ── */
+.map-filter-select {
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
 /* ── Seat Map：外層固定視窗（裁切超出範圍） ── */
 .map-viewport {
     position: relative;
@@ -709,3 +715,4 @@ body.screenshot-mode .node {
     pointer-events: none;
     cursor: default;
 }
+
