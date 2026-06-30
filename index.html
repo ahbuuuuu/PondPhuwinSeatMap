@@ -11,11 +11,13 @@
 </head>
 <body>
 
-<!-- ── 聊天抽屜切換按鈕 ── -->
-<button class="chat-toggle-btn" id="ui-chat-toggle" onclick="openChat()">💬 聊天</button>
+<!-- ── 聊天抽屜切換按鈕（兩個獨立入口）── -->
+<button class="chat-toggle-btn" id="ui-chat-toggle" onclick="openChat()" style="top:42%;">📍 區域聊天</button>
+<button class="chat-toggle-btn" id="ui-global-chat-toggle" onclick="openGlobalChat()" style="top:58%; background:#fff; color:#000;">🌐 全場聊天室</button>
 
 <!-- ── 聊天抽屜遮罩 ── -->
 <div class="chat-overlay" id="chat-overlay" onclick="closeChat()"></div>
+<div class="chat-overlay" id="global-chat-overlay" onclick="closeGlobalChat()"></div>
 
 <!-- ── 聊天抽屜 ── -->
 <div class="chat-drawer" id="chat-drawer">
@@ -23,7 +25,8 @@
         <h3 id="ui-chat-title">💬 聊天室</h3>
         <button class="chat-close-btn" onclick="closeChat()">✕</button>
     </div>
-    <select class="form-input" id="chat-zone-select" onchange="loadChatMessages()" style="margin:8px 12px 0; width:calc(100% - 24px);">
+    <p id="ui-chat-view-label" style="margin:8px 12px 4px; font-size:11px; color:rgba(255,255,255,0.5);">👀 正在觀看</p>
+    <select class="form-input" id="chat-zone-select" onchange="loadChatMessages()" style="margin:0 12px; width:calc(100% - 24px);">
         <option value="">全部區域</option>
         <option value="A1">A1</option>
         <option value="A2">A2</option>
@@ -69,10 +72,70 @@
         <option value="S">S</option>
     </select>
     <div class="chat-messages" id="chat-messages"></div>
+    <p id="ui-chat-send-label" style="margin:6px 12px 2px; font-size:11px; color:rgba(255,255,255,0.5);">📤 發送到</p>
+    <select class="form-input" id="chat-send-zone-select" style="margin:0 12px 8px; width:calc(100% - 24px);">
+        <option value="ALL" id="ui-chat-zone-all">🌐 全部區域（ALL）</option>
+        <option value="A1">A1</option>
+        <option value="A2">A2</option>
+        <option value="A3">A3</option>
+        <option value="A4">A4</option>
+        <option value="B1">B1</option>
+        <option value="B2">B2</option>
+        <option value="B3">B3</option>
+        <option value="C1">C1</option>
+        <option value="C2">C2</option>
+        <option value="C3">C3</option>
+        <option value="SB">SB</option>
+        <option value="SC">SC</option>
+        <option value="SD">SD</option>
+        <option value="SE">SE</option>
+        <option value="SF">SF</option>
+        <option value="SG">SG</option>
+        <option value="SH">SH</option>
+        <option value="SI">SI</option>
+        <option value="SJ">SJ</option>
+        <option value="SK">SK</option>
+        <option value="SL">SL</option>
+        <option value="SM">SM</option>
+        <option value="SN">SN</option>
+        <option value="FF">FF</option>
+        <option value="HH">HH</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+        <option value="E">E</option>
+        <option value="F">F</option>
+        <option value="G">G</option>
+        <option value="H">H</option>
+        <option value="I">I</option>
+        <option value="J">J</option>
+        <option value="K">K</option>
+        <option value="L">L</option>
+        <option value="M">M</option>
+        <option value="N">N</option>
+        <option value="O">O</option>
+        <option value="P">P</option>
+        <option value="Q">Q</option>
+        <option value="R">R</option>
+        <option value="S">S</option>
+    </select>
     <div class="chat-input-row">
         <input type="text" id="chat-name" placeholder="暱稱" style="flex:0 0 70px;">
         <input type="text" id="chat-input" placeholder="說點什麼...">
         <button class="chat-send-btn" id="ui-chat-send" onclick="sendChatMessage()">送出</button>
+    </div>
+</div>
+
+<!-- ── 全場聊天室抽屜（不分區域，所有人共用） ── -->
+<div class="chat-drawer" id="global-chat-drawer">
+    <div class="chat-drawer-header">
+        <h3 id="ui-global-chat-title">🌐 全場聊天室</h3>
+        <button class="chat-close-btn" onclick="closeGlobalChat()">✕</button>
+    </div>
+    <div class="chat-messages" id="global-chat-messages"></div>
+    <div class="chat-input-row">
+        <input type="text" id="global-chat-name" placeholder="暱稱" style="flex:0 0 70px;">
+        <input type="text" id="global-chat-input" placeholder="說點什麼...">
+        <button class="chat-send-btn" id="ui-global-chat-send" onclick="sendGlobalChatMessage()">送出</button>
     </div>
 </div>
 
