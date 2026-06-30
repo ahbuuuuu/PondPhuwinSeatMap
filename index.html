@@ -37,6 +37,7 @@
     <div class="map-wrapper" id="map-wrapper">
         <img id="seat-img" src="seatmap.jpg" alt="Seat Map">
     </div>
+    <div id="name-tooltip" class="name-tooltip"></div>
 
     <!-- ── Stats ── -->
     <div class="stats-area">
@@ -72,6 +73,7 @@
 <div class="modal" id="list-modal">
     <div class="modal-content">
         <h3 id="ui-list-title">💖 名單列表</h3>
+        <input class="form-input" type="text" id="search-input" placeholder="🔍 搜尋暱稱..." oninput="renderList()" style="margin-bottom:10px;">
         <div id="seat-list"></div>
         <hr class="divider">
         <button class="btn-secondary" id="ui-close-btn" onclick="closeModal('list-modal')" style="margin-bottom:6px;">關閉</button>
