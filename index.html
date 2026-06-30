@@ -42,7 +42,10 @@
     <!-- ── Stats ── -->
     <div class="stats-area">
         <h3 id="ui-count-label">已入座：0 人</h3>
-        <button class="btn-list" onclick="openModal('list-modal')">💖 List</button>
+        <div style="display:flex; gap:6px;">
+            <button class="btn-list" onclick="openModal('list-modal')">💖 List</button>
+            <button class="btn-list" onclick="openModal('mine-modal')" style="background:transparent; border:1px solid var(--main); color:var(--main);">🔑 我的座位</button>
+        </div>
     </div>
 
 </div>
@@ -66,6 +69,30 @@
         </select>
         <button class="btn-confirm"   id="ui-btn"        onclick="save()">確認登記</button>
         <button class="btn-secondary" id="ui-cancel-btn" onclick="closeModal('modal')">取消</button>
+    </div>
+</div>
+
+<!-- ── 登記成功，顯示密碼 Modal ── -->
+<div class="modal" id="pin-modal">
+    <div class="modal-content">
+        <h3>🎉 登記成功！</h3>
+        <p style="color:rgba(255,255,255,0.7); font-size:13px; margin-bottom:8px;">
+            請記住這組密碼，之後可用來修改或刪除你的座位：
+        </p>
+        <div id="pin-display" style="font-size:32px; font-weight:700; color:var(--main); text-align:center; letter-spacing:8px; background:rgba(0,255,204,0.08); border:1px solid var(--main); border-radius:10px; padding:16px; margin-bottom:14px;"></div>
+        <button class="btn-confirm" onclick="closeModal('pin-modal')">我記住了</button>
+    </div>
+</div>
+
+<!-- ── 我的座位（憑密碼修改/刪除） Modal ── -->
+<div class="modal" id="mine-modal">
+    <div class="modal-content">
+        <h3>🔑 我的座位</h3>
+        <input class="form-input" type="text" id="mine-name" placeholder="暱稱">
+        <input class="form-input" type="text" id="mine-pin" placeholder="4 位數密碼" maxlength="4" inputmode="numeric">
+        <button class="btn-confirm" onclick="verifyMine()">查詢</button>
+        <div id="mine-result" style="margin-top:14px;"></div>
+        <button class="btn-secondary" onclick="closeModal('mine-modal')" style="margin-top:10px;">關閉</button>
     </div>
 </div>
 
