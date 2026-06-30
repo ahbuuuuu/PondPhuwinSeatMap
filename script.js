@@ -105,7 +105,8 @@ const i18n = {
         shareGenerate:  "🔗 產生分享連結",
         shareResultTitle: "🔗 分享連結已產生",
         shareResultHint:  "複製這個連結分享出去，打開後只會看到被選中的人",
-        shareCopy:        "📋 複製連結"
+        shareCopy:        "📋 複製連結",
+        addSeatBtn: "➕ 新增座位"
     },
     en: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -162,7 +163,8 @@ const i18n = {
         shareGenerate:  "🔗 Generate Share Link",
         shareResultTitle: "🔗 Link Generated",
         shareResultHint:  "Copy this link to share — only the selected people will be shown",
-        shareCopy:        "📋 Copy Link"
+        shareCopy:        "📋 Copy Link",
+        addSeatBtn: "➕ Add Seat"
     },
     th: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -219,7 +221,8 @@ const i18n = {
         shareGenerate:  "🔗 สร้างลิงก์แชร์",
         shareResultTitle: "🔗 สร้างลิงก์แล้ว",
         shareResultHint:  "คัดลอกลิงก์นี้ไปแชร์ จะแสดงเฉพาะคนที่เลือกเท่านั้น",
-        shareCopy:        "📋 คัดลอกลิงก์"
+        shareCopy:        "📋 คัดลอกลิงก์",
+        addSeatBtn: "➕ เพิ่มที่นั่ง"
     }
 };
 
@@ -288,6 +291,9 @@ function setLang(l) {
     setText('ui-share-result-title', d.shareResultTitle);
     setText('ui-share-result-hint', d.shareResultHint);
     setText('ui-share-copy', d.shareCopy);
+
+    // 新增座位按鈕
+    setText('ui-add-seat-btn', d.addSeatBtn);
 
     const bar = document.getElementById('notify-bar');
     if (bar && bar.dataset.isUser !== 'true') bar.textContent = d.wait;
@@ -546,6 +552,61 @@ wrapper.addEventListener('click', (e) => {
 
 
 /* ────────────────────────────────────────────
+   7-3. 區域座標對照表（依座位圖實際量測，單位：百分比）
+   ──────────────────────────────────────────── */
+const ZONE_COORDS = {
+    A1: { x: 33.1, y: 26.1 }, A2: { x: 41.4, y: 23.1 },
+    A3: { x: 58.6, y: 23.1 }, A4: { x: 66.9, y: 26.1 },
+    B1: { x: 34.6, y: 38.3 }, B2: { x: 49.7, y: 39.4 }, B3: { x: 65.4, y: 38.3 },
+    C1: { x: 34.6, y: 47.1 }, C2: { x: 49.7, y: 47.1 }, C3: { x: 65.4, y: 47.1 },
+    FF: { x: 42.2, y: 52.3 }, HH: { x: 56.8, y: 52.3 },
+    SB: { x: 23.0, y: 19.5 }, SC: { x: 23.0, y: 26.7 },
+    SD: { x: 23.0, y: 37.4 }, SE: { x: 23.0, y: 47.1 },
+    SF: { x: 29.8, y: 58.5 }, SG: { x: 39.9, y: 64.8 },
+    SH: { x: 49.7, y: 63.9 }, SI: { x: 59.8, y: 64.8 },
+    SJ: { x: 70.2, y: 58.5 }, SK: { x: 77.0, y: 47.1 },
+    SL: { x: 77.0, y: 37.4 }, SM: { x: 77.0, y: 26.7 }, SN: { x: 77.0, y: 19.5 },
+    C:  { x: 7.8,  y: 26.7 }, D:  { x: 7.8,  y: 37.4 }, E:  { x: 7.8,  y: 47.1 },
+    F:  { x: 10.6, y: 57.1 }, G:  { x: 14.6, y: 65.7 }, H:  { x: 19.7, y: 74.3 },
+    I:  { x: 29.8, y: 78.4 }, J:  { x: 39.9, y: 79.5 }, K:  { x: 49.7, y: 78.8 },
+    L:  { x: 59.8, y: 79.5 }, M:  { x: 69.9, y: 78.4 }, N:  { x: 80.3, y: 74.3 },
+    O:  { x: 85.4, y: 65.7 }, P:  { x: 89.4, y: 57.1 }, Q:  { x: 92.2, y: 47.1 },
+    R:  { x: 92.2, y: 37.4 }, S:  { x: 92.2, y: 26.7 }
+};
+
+// 同一區域內多人時，在中心點附近做小範圍隨機散開，避免完全重疊在同一格
+function jitterZoneCoord(zone) {
+    const base = ZONE_COORDS[zone];
+    if (!base) return { x: 50, y: 50 }; // 找不到對照時退回地圖中心
+
+    const range = 3; // 上下左右各 3% 範圍內隨機散開
+    return {
+        x: Math.min(98, Math.max(2, base.x + (Math.random() - 0.5) * range * 2)),
+        y: Math.min(98, Math.max(2, base.y + (Math.random() - 0.5) * range * 2))
+    };
+}
+
+// 「新增座位」按鈕：不需要先點地圖，直接打開登記視窗
+// 座標會在使用者選擇區域時自動對應；尚未選擇區域前先放在地圖中心點
+function openAddSeatFromButton() {
+    lastPos = { x: 50, y: 50 };
+    openModal('modal');
+}
+
+// 登記視窗裡的區域下拉選單一旦變更，立即更新預定座標（不論是用按鈕還是點地圖進來的）
+document.addEventListener('DOMContentLoaded', () => {
+    const zoneSelect = document.getElementById('zone');
+    if (zoneSelect) {
+        zoneSelect.addEventListener('change', () => {
+            if (zoneSelect.value) {
+                lastPos = jitterZoneCoord(zoneSelect.value);
+            }
+        });
+    }
+});
+
+
+/* ────────────────────────────────────────────
    8. 圖片壓縮（上傳前縮小並轉為 Blob）
    ──────────────────────────────────────────── */
 function compressImageToBlob(file, maxSize, quality) {
@@ -699,6 +760,8 @@ function subscribeRealtime() {
 /* ────────────────────────────────────────────
    11. 地圖渲染
    ──────────────────────────────────────────── */
+let avatarsHidden = false; // 是否處於「隱藏所有頭像」狀態
+
 function render() {
     let seats = allData[currentDate] || [];
     const lang = getLang();
@@ -720,6 +783,7 @@ function render() {
         node.dataset.id = s.id;
         node.style.left = s.x + '%';
         node.style.top = s.y + '%';
+        if (avatarsHidden) node.classList.add('node-hidden');
 
         if (s.img_data) {
             const img = document.createElement('img');
@@ -741,6 +805,18 @@ function render() {
     });
 
     if (!screenshotMode) renderList();
+}
+
+// 隱藏／顯示所有頭像（先看清楚座位圖底圖，再決定要不要看人群）
+function toggleAvatarsVisibility() {
+    avatarsHidden = !avatarsHidden;
+
+    document.querySelectorAll('.node').forEach(node => {
+        node.classList.toggle('node-hidden', avatarsHidden);
+    });
+
+    const btn = document.getElementById('ui-toggle-avatars');
+    if (btn) btn.textContent = avatarsHidden ? '👁️‍🗨️' : '👁️';
 }
 
 
