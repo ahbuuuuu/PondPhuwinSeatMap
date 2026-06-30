@@ -54,15 +54,36 @@ async function runMigration() {
     btn.disabled = true;
     btn.textContent = '⏳ 執行中，請勿關閉此頁面...';
 
-    log('開始讀取資料庫...');
+    log('開始讀取資料庫（分批讀取，避免逾時）...');
 
-    const { data: seats, error } = await db.from('seats').select('*');
+    let seats = [];
+    let batchStart = 0;
+    const batchSize = 20;
+    let hasMore = true;
 
-    if (error) {
-        log('❌ 讀取失敗：' + JSON.stringify(error));
-        btn.disabled = false;
-        btn.textContent = '🚀 重新嘗試';
-        return;
+    while (hasMore) {
+        const { data: batch, error } = await db
+            .from('seats')
+            .select('*')
+            .range(batchStart, batchStart + batchSize - 1);
+
+        if (error) {
+            log(`❌ 讀取第 ${batchStart} 批失敗：` + JSON.stringify(error));
+            btn.disabled = false;
+            btn.textContent = '🚀 重新嘗試';
+            return;
+        }
+
+        seats = seats.concat(batch);
+        log(`  已讀取 ${seats.length} 筆...`);
+
+        if (batch.length < batchSize) {
+            hasMore = false;
+        } else {
+            batchStart += batchSize;
+        }
+
+        await new Promise(r => setTimeout(r, 150));
     }
 
     log(`✅ 共讀到 ${seats.length} 筆資料`);
