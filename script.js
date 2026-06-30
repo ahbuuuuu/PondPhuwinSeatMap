@@ -74,6 +74,14 @@ const i18n = {
         mineDeleteConfirm: "確定要刪除這個座位嗎？此動作無法復原。",
         mineDeleteFail: "刪除失敗：",
         mineDeleteOk: "✅ 已刪除座位",
+        mineChangeZone: "📍 異動區域",
+        mineChangeZonePrompt: "輸入新的區域代號：",
+        mineZoneInvalid: "❌ 區域代號不存在，請確認輸入正確",
+        mineDragHintBar: "📍 請在地圖上拖曳你的頭像到新位置以完成異動",
+        mineZoneUpdateOk: "已更新位置！",
+        mineEditNote: "📝 編輯備註",
+        mineNotePrompt: "輸入備註（IG / Line ID 等聯絡方式，所有人都看得到）：",
+        mineNoteUpdateOk: "✅ 已更新備註",
 
         // 登記成功提示密碼
         pinSuccessTitle: "🎉 登記成功！",
@@ -103,7 +111,13 @@ const i18n = {
         shareCopy:        "📋 複製連結",
         addSeatBtn: "➕ 新增座位",
         mapFilterAll: "🗺️ 顯示全部區域",
-        statsOutOfZone: "(???)"
+        statsOutOfZone: "(???)",
+        userInfoTitle: "👤 用戶資訊",
+        userInfoName: "暱稱",
+        userInfoZone: "所在區域",
+        userInfoNote: "備註",
+        userInfoNoteEmpty: "（尚未填寫）",
+        noteFieldPh: "備註（IG / Line ID 等聯絡方式，選填，所有人都看得到）"
     },
     en: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -134,6 +148,14 @@ const i18n = {
         mineDeleteConfirm: "Are you sure you want to delete this seat? This cannot be undone.",
         mineDeleteFail: "Delete failed: ",
         mineDeleteOk: "✅ Seat deleted",
+        mineChangeZone: "📍 Change Zone",
+        mineChangeZonePrompt: "Enter new zone code:",
+        mineZoneInvalid: "❌ Invalid zone code, please check and try again",
+        mineDragHintBar: "📍 Drag your avatar on the map to the new position to confirm",
+        mineZoneUpdateOk: "Position updated!",
+        mineEditNote: "📝 Edit Note",
+        mineNotePrompt: "Enter a note (IG / Line ID, etc. — visible to everyone):",
+        mineNoteUpdateOk: "✅ Note updated",
 
         pinSuccessTitle: "🎉 Registered!",
         pinSuccessDesc:  "Please remember this PIN — you can use it later to edit or delete your seat:",
@@ -160,7 +182,13 @@ const i18n = {
         shareCopy:        "📋 Copy Link",
         addSeatBtn: "➕ Add Seat",
         mapFilterAll: "🗺️ Show All Zones",
-        statsOutOfZone: "(???)"
+        statsOutOfZone: "(???)",
+        userInfoTitle: "👤 User Info",
+        userInfoName: "Nickname",
+        userInfoZone: "Zone",
+        userInfoNote: "Note",
+        userInfoNoteEmpty: "(not provided)",
+        noteFieldPh: "Note (IG / Line ID, etc. — optional, visible to everyone)"
     },
     th: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -191,6 +219,14 @@ const i18n = {
         mineDeleteConfirm: "ยืนยันลบที่นั่งนี้หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้",
         mineDeleteFail: "ลบล้มเหลว: ",
         mineDeleteOk: "✅ ลบที่นั่งแล้ว",
+        mineChangeZone: "📍 เปลี่ยนโซน",
+        mineChangeZonePrompt: "กรอกรหัสโซนใหม่:",
+        mineZoneInvalid: "❌ รหัสโซนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง",
+        mineDragHintBar: "📍 ลากอวาตาร์ของคุณบนแผนที่ไปยังตำแหน่งใหม่เพื่อยืนยัน",
+        mineZoneUpdateOk: "อัปเดตตำแหน่งแล้ว!",
+        mineEditNote: "📝 แก้ไขโน้ต",
+        mineNotePrompt: "กรอกโน้ต (IG / Line ID ฯลฯ — ทุกคนมองเห็นได้):",
+        mineNoteUpdateOk: "✅ อัปเดตโน้ตแล้ว",
 
         pinSuccessTitle: "🎉 ลงทะเบียนสำเร็จ!",
         pinSuccessDesc:  "กรุณาจำรหัสนี้ไว้ ใช้สำหรับแก้ไขหรือลบที่นั่งของคุณในอนาคต:",
@@ -217,7 +253,13 @@ const i18n = {
         shareCopy:        "📋 คัดลอกลิงก์",
         addSeatBtn: "➕ เพิ่มที่นั่ง",
         mapFilterAll: "🗺️ แสดงทุกโซน",
-        statsOutOfZone: "(???)"
+        statsOutOfZone: "(???)",
+        userInfoTitle: "👤 ข้อมูลผู้ใช้",
+        userInfoName: "ชื่อเล่น",
+        userInfoZone: "โซน",
+        userInfoNote: "โน้ต",
+        userInfoNoteEmpty: "(ยังไม่ได้กรอก)",
+        noteFieldPh: "โน้ต (IG / Line ID ฯลฯ — ไม่บังคับ ทุกคนมองเห็นได้)"
     }
 };
 
@@ -282,6 +324,14 @@ function setLang(l) {
 
     // 新增座位按鈕
     setText('ui-add-seat-btn', d.addSeatBtn);
+    setAttr('note', 'placeholder', d.noteFieldPh);
+
+    // 用戶資訊查看 Modal
+    setText('ui-user-info-title', d.userInfoTitle);
+    setText('ui-user-info-close', d.close);
+
+    // 我的座位：拖曳異動區域提示
+    setText('ui-mine-drag-hint', d.mineDragHintBar);
 
     // 地圖區域篩選選單
     setText('ui-map-filter-all', d.mapFilterAll);
@@ -304,7 +354,7 @@ function openModal(id) {
 function closeModal(id) {
     document.getElementById(id).classList.remove('show');
     if (id === 'modal') {
-        ['name', 'zone', 'img', 'emoji'].forEach(i => {
+        ['name', 'zone', 'img', 'emoji', 'note'].forEach(i => {
             const el = document.getElementById(i);
             if (el) el.value = '';
         });
@@ -317,7 +367,7 @@ document.querySelectorAll('.modal').forEach(modal => {
         if (e.target === modal) {
             modal.classList.remove('show');
             if (modal.id === 'modal') {
-                ['name', 'zone', 'img', 'emoji'].forEach(i => {
+                ['name', 'zone', 'img', 'emoji', 'note'].forEach(i => {
                     const el = document.getElementById(i);
                     if (el) el.value = '';
                 });
@@ -696,6 +746,8 @@ async function save() {
     const zone   = document.getElementById('zone').value;
     const file   = document.getElementById('img').files[0];
     const emoji  = document.getElementById('emoji').value;
+    const noteEl = document.getElementById('note');
+    const note   = noteEl ? noteEl.value.trim() : '';
 
     if (file) {
         if (!file.type.startsWith('image/')) {
@@ -744,7 +796,8 @@ async function save() {
         emoji:    emoji || null,
         img_data: imgUrl || null,
         pin:      pin,
-        zone:     zone || null
+        zone:     zone || null,
+        note:     note || null
     };
 
     const { error } = await db.from('seats').insert(payload).select();
@@ -1034,12 +1087,29 @@ function renderList() {
             item.appendChild(checkbox);
         }
 
-        const span = document.createElement('span');
-        span.textContent = s.name;
-        item.appendChild(span);
+        const nameWrap = document.createElement('span');
+        nameWrap.style.cssText = 'flex:1; display:flex; align-items:center; min-width:0; overflow:hidden;';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = s.name;
+        nameSpan.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,255,204,0.4);';
+        nameSpan.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openUserInfo(s);
+        });
+        nameWrap.appendChild(nameSpan);
+
+        // 顯示所在區域（依實際座標判斷，跟地圖篩選邏輯一致）
+        const detectedZone = detectZoneByCoord(s.x, s.y);
+        const zoneTag = document.createElement('span');
+        zoneTag.className = 'seat-item-zone';
+        zoneTag.textContent = detectedZone || d.statsOutOfZone;
+        nameWrap.appendChild(zoneTag);
+
+        item.appendChild(nameWrap);
 
         item.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-del') || e.target.tagName === 'INPUT') return;
+            if (e.target.closest('.btn-del') || e.target.tagName === 'INPUT' || e.target === nameSpan) return;
 
             if (shareMode) {
                 // 分享模式下點整列也等同勾選
@@ -1048,7 +1118,7 @@ function renderList() {
                 return;
             }
 
-            // 一般模式：點名單項目跳到地圖位置並高亮閃爍
+            // 一般模式：點名單項目（名字以外的地方）跳到地圖位置並高亮閃爍
             closeModal('list-modal');
             jumpToSeat(s.id);
         });
@@ -1072,6 +1142,42 @@ function renderList() {
             : d.empty;
         listEl.appendChild(p);
     }
+}
+
+// 查看用戶資訊（暱稱／所在區域／備註），所有人都能看到
+function openUserInfo(seat) {
+    const d = i18n[getLang()];
+    const contentEl = document.getElementById('user-info-content');
+    if (!contentEl) return;
+
+    contentEl.innerHTML = '';
+
+    const detectedZone = detectZoneByCoord(seat.x, seat.y);
+
+    const rows = [
+        { label: d.userInfoName, value: seat.name },
+        { label: d.userInfoZone, value: detectedZone || d.statsOutOfZone },
+        { label: d.userInfoNote, value: seat.note || d.userInfoNoteEmpty }
+    ];
+
+    rows.forEach(r => {
+        const row = document.createElement('div');
+        row.className = 'user-info-row';
+
+        const label = document.createElement('span');
+        label.className = 'user-info-label';
+        label.textContent = r.label;
+        row.appendChild(label);
+
+        const value = document.createElement('span');
+        value.className = 'user-info-value';
+        value.textContent = r.value;
+        row.appendChild(value);
+
+        contentEl.appendChild(row);
+    });
+
+    openModal('user-info-modal');
 }
 
 
@@ -1219,19 +1325,31 @@ async function verifyMine() {
         card.appendChild(info);
 
         const btnRow = document.createElement('div');
-        btnRow.style.cssText = 'display:flex; gap:8px;';
+        btnRow.style.cssText = 'display:flex; gap:6px; flex-wrap:wrap;';
 
         const editBtn = document.createElement('button');
         editBtn.textContent = d.mineEdit;
-        editBtn.style.cssText = 'flex:1; padding:8px; border-radius:8px; border:1px solid var(--main); background:transparent; color:var(--main); font-size:12px;';
+        editBtn.style.cssText = 'flex:1; min-width:70px; padding:8px; border-radius:8px; border:1px solid var(--main); background:transparent; color:var(--main); font-size:12px;';
         editBtn.onclick = () => editMySeat(seat);
+
+        const zoneBtn = document.createElement('button');
+        zoneBtn.textContent = d.mineChangeZone;
+        zoneBtn.style.cssText = 'flex:1; min-width:70px; padding:8px; border-radius:8px; border:1px solid var(--main); background:transparent; color:var(--main); font-size:12px;';
+        zoneBtn.onclick = () => startChangeZone(seat);
+
+        const noteBtn = document.createElement('button');
+        noteBtn.textContent = d.mineEditNote;
+        noteBtn.style.cssText = 'flex:1; min-width:70px; padding:8px; border-radius:8px; border:1px solid var(--main); background:transparent; color:var(--main); font-size:12px;';
+        noteBtn.onclick = () => editMyNote(seat);
 
         const delBtn = document.createElement('button');
         delBtn.textContent = d.mineDelete;
-        delBtn.style.cssText = 'flex:1; padding:8px; border-radius:8px; border:none; background:rgba(255,60,60,0.7); color:#fff; font-size:12px;';
+        delBtn.style.cssText = 'flex:1; min-width:70px; padding:8px; border-radius:8px; border:none; background:rgba(255,60,60,0.7); color:#fff; font-size:12px;';
         delBtn.onclick = () => deleteMySeat(seat);
 
         btnRow.appendChild(editBtn);
+        btnRow.appendChild(zoneBtn);
+        btnRow.appendChild(noteBtn);
         btnRow.appendChild(delBtn);
         card.appendChild(btnRow);
         resultEl.appendChild(card);
@@ -1260,6 +1378,155 @@ async function editMySeat(seat) {
     alert(d.mineUpdateOk);
     await loadSeats();
     closeModal('mine-modal');
+}
+
+// 編輯備註（聯絡資訊，所有人都看得到）
+async function editMyNote(seat) {
+    const d = i18n[getLang()];
+    const newNote = prompt(d.mineNotePrompt, seat.note || '');
+    if (newNote === null) return;
+
+    const { error } = await db
+        .from('seats')
+        .update({ note: newNote.trim() || null })
+        .eq('id', seat.id)
+        .eq('pin', seat.pin);
+
+    if (error) {
+        alert(d.mineUpdateFail + error.message);
+        return;
+    }
+
+    alert(d.mineNoteUpdateOk);
+    await loadSeats();
+    closeModal('mine-modal');
+}
+
+// ────────────────────────────────────────────
+// 異動區域：選新區域 → 關閉視窗 → 拖曳頭像到新位置確認
+// ────────────────────────────────────────────
+let pendingZoneChangeSeat = null; // 正在異動區域、等待拖曳確認的座位
+
+function startChangeZone(seat) {
+    const d = i18n[getLang()];
+
+    // 用一個簡單的下拉選單讓使用者選新區域
+    const zoneOptions = Object.keys(ZONE_BOUNDS);
+    const promptText = d.mineChangeZonePrompt + '\n' + zoneOptions.join('、');
+    const newZone = prompt(promptText, seat.zone || '');
+    if (newZone === null) return;
+
+    const trimmedZone = newZone.trim().toUpperCase();
+    if (!ZONE_BOUNDS[trimmedZone]) {
+        alert(d.mineZoneInvalid);
+        return;
+    }
+
+    pendingZoneChangeSeat = { ...seat, zone: trimmedZone };
+    closeModal('mine-modal');
+
+    // 提示使用者去地圖上拖曳自己的頭像確認位置
+    const bar = document.getElementById('notify-bar');
+    if (bar) {
+        bar.dataset.isUser = 'true';
+        bar.textContent = d.mineDragHintBar;
+    }
+
+    // 找到對應的頭像節點，加上特殊樣式跟拖曳事件，方便使用者一眼認出並拖曳
+    setTimeout(() => {
+        const node = wrapper.querySelector(`.node[data-id="${pendingZoneChangeSeat.id}"]`);
+        if (node) {
+            node.classList.add('highlight');
+            attachZoneChangeDragHandlers(node, pendingZoneChangeSeat);
+        }
+    }, 200);
+}
+
+// 拖曳調整異動區域後的最終位置（不需要 Admin 權限，只需要剛剛通過密碼驗證）
+function attachZoneChangeDragHandlers(node, seat) {
+    let didMove = false;
+    let startClientX = 0, startClientY = 0;
+
+    function getPercentPos(clientX, clientY) {
+        const rect = wrapper.getBoundingClientRect();
+        return {
+            x: Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100)),
+            y: Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100))
+        };
+    }
+
+    function onMove(clientX, clientY) {
+        const dx = clientX - startClientX;
+        const dy = clientY - startClientY;
+        if (Math.abs(dx) > ADMIN_DRAG_THRESHOLD || Math.abs(dy) > ADMIN_DRAG_THRESHOLD) didMove = true;
+        if (didMove) {
+            const pos = getPercentPos(clientX, clientY);
+            node.style.left = pos.x + '%';
+            node.style.top = pos.y + '%';
+        }
+    }
+
+    async function onEnd(clientX, clientY) {
+        document.removeEventListener('mousemove', mouseMoveHandler);
+        document.removeEventListener('mouseup', mouseUpHandler);
+        document.removeEventListener('touchmove', touchMoveHandler);
+        document.removeEventListener('touchend', touchEndHandler);
+
+        if (!didMove) return; // 沒有實際拖曳，不做任何事，讓使用者可以再次嘗試
+
+        const pos = getPercentPos(clientX, clientY);
+        const d = i18n[getLang()];
+
+        const { error } = await db
+            .from('seats')
+            .update({ zone: seat.zone, x: pos.x, y: pos.y })
+            .eq('id', seat.id)
+            .eq('pin', seat.pin);
+
+        const bar = document.getElementById('notify-bar');
+
+        if (error) {
+            console.error('Zone change error:', error);
+            if (bar) bar.textContent = '❌ ' + d.mineUpdateFail;
+        } else {
+            if (bar) { bar.dataset.isUser = 'true'; bar.textContent = '✅ ' + d.mineZoneUpdateOk; }
+            pendingZoneChangeSeat = null;
+        }
+
+        await loadSeats();
+    }
+
+    function mouseMoveHandler(e) { onMove(e.clientX, e.clientY); }
+    function mouseUpHandler(e) { onEnd(e.clientX, e.clientY); }
+    function touchMoveHandler(e) {
+        if (e.touches.length !== 1) return;
+        e.preventDefault();
+        onMove(e.touches[0].clientX, e.touches[0].clientY);
+    }
+    function touchEndHandler(e) {
+        const t = e.changedTouches[0];
+        onEnd(t.clientX, t.clientY);
+    }
+
+    node.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        didMove = false;
+        startClientX = e.clientX;
+        startClientY = e.clientY;
+        document.addEventListener('mousemove', mouseMoveHandler);
+        document.addEventListener('mouseup', mouseUpHandler);
+    });
+
+    node.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        e.stopPropagation();
+        didMove = false;
+        startClientX = e.touches[0].clientX;
+        startClientY = e.touches[0].clientY;
+        document.addEventListener('touchmove', touchMoveHandler, { passive: false });
+        document.addEventListener('touchend', touchEndHandler);
+    }, { passive: true });
 }
 
 async function deleteMySeat(seat) {
