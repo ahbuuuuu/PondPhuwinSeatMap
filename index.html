@@ -295,6 +295,7 @@
             <option value="🌙">🌙 月亮</option>
             <option value="⭐">⭐ 星星</option>
         </select>
+        <input class="form-input" type="text" id="note" placeholder="備註（IG / Line ID 等聯絡方式，選填，所有人都看得到）" maxlength="100">
         <button class="btn-confirm" id="ui-btn" onclick="save()">確認登記</button>
         <button class="btn-secondary" id="ui-cancel-btn" onclick="closeModal('modal')">取消</button>
     </div>
@@ -322,6 +323,7 @@
         <input class="form-input" type="text" id="mine-pin" placeholder="4 位數密碼" maxlength="4" inputmode="numeric">
         <button class="btn-confirm" id="ui-mine-query" onclick="verifyMine()">查詢</button>
         <div id="mine-result" class="modal-spacer-top-lg"></div>
+        <p id="ui-mine-drag-hint" class="modal-hint" style="display:none; color:var(--main);">📍 請拖曳你的頭像到新位置以完成異動</p>
         <button class="btn-secondary modal-spacer-top" id="ui-mine-close" onclick="closeModal('mine-modal')">關閉</button>
     </div>
 </div>
@@ -358,6 +360,17 @@
         <input class="form-input" type="text" id="share-link-output" readonly style="font-size:12px;">
         <button class="btn-confirm" id="ui-share-copy" onclick="copyShareLink()">📋 複製連結</button>
         <button class="btn-secondary modal-spacer-top" id="ui-share-close" onclick="closeModal('share-result-modal')">關閉</button>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     Modal：查看用戶資訊（暱稱／區域／備註）
+     ════════════════════════════════════════ -->
+<div class="modal" id="user-info-modal">
+    <div class="modal-content">
+        <h3 id="ui-user-info-title">👤 用戶資訊</h3>
+        <div id="user-info-content"></div>
+        <button class="btn-secondary modal-spacer-top" id="ui-user-info-close" onclick="closeModal('user-info-modal')">關閉</button>
     </div>
 </div>
 
