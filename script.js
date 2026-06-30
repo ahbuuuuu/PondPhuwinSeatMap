@@ -132,6 +132,32 @@ wrapper.addEventListener('click', (e) => {
 // ────────────────────────────────────────────
 // Save Seat
 // ────────────────────────────────────────────
+// ────────────────────────────────────────────
+// 圖片壓縮（縮小到 maxSize px，品質 quality）
+// ────────────────────────────────────────────
+function compressImage(file, maxSize, quality) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = (ev) => {
+            const img = new Image();
+            img.onerror = reject;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let w = img.width, h = img.height;
+                if (w > h) { if (w > maxSize) { h = h * maxSize / w; w = maxSize; } }
+                else       { if (h > maxSize) { w = w * maxSize / h; h = maxSize; } }
+                canvas.width  = Math.round(w);
+                canvas.height = Math.round(h);
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
 async function save() {
     const nameEl = document.getElementById('name');
     const name   = (nameEl && nameEl.value.trim()) ? nameEl.value.trim() : "Anonymous";
@@ -146,12 +172,7 @@ async function save() {
 
     let imgData = null;
     if (file) {
-        imgData = await new Promise((res, rej) => {
-            const reader = new FileReader();
-            reader.onload  = ev => res(ev.target.result);
-            reader.onerror = rej;
-            reader.readAsDataURL(file);
-        });
+        imgData = await compressImage(file, 100, 0.6); // 最大 100px，品質 60%
     }
 
     const payload = {
@@ -198,12 +219,12 @@ async function loadSeats() {
 }
 
 // ────────────────────────────────────────────
-// 輪詢模式（每 15 秒自動重新載入，穩定不斷線）
+// 輪詢模式（每 30 秒自動重新載入，穩定不斷線）
 // ────────────────────────────────────────────
 function subscribeRealtime() {
     if (realtimeChannel) clearInterval(realtimeChannel);
-    realtimeChannel = setInterval(() => loadSeats(), 15000);
-    console.log('Polling mode: refresh every 15s');
+    realtimeChannel = setInterval(() => loadSeats(), 30000);
+    console.log('Polling mode: refresh every 30s');
 }
 
 // ────────────────────────────────────────────
@@ -303,4 +324,3 @@ window.onload = async () => {
         bar.textContent = i18n[getLang()].wait;
     }
 };
-
