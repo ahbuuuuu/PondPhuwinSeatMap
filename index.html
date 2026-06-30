@@ -11,22 +11,68 @@
 </head>
 <body>
 
-<!-- ── 聊天抽屜切換按鈕（兩個獨立入口）── -->
-<button class="chat-toggle-btn" id="ui-chat-toggle" onclick="openChat()" style="top:42%;">📍 區域聊天</button>
-<button class="chat-toggle-btn" id="ui-global-chat-toggle" onclick="openGlobalChat()" style="top:58%; background:#fff; color:#000;">🌐 全場聊天室</button>
+<!-- ════════════════════════════════════════
+     主畫面
+     ════════════════════════════════════════ -->
+<div class="container">
 
-<!-- ── 聊天抽屜遮罩 ── -->
+    <!-- ── Header ── -->
+    <header>
+        <h1 id="ui-title">POND PHUWIN · Space Soul-dyssey CONCERT</h1>
+        <p class="header-credit">圖片CR.小紅書Arizzzzzz_</p>
+        <div class="control-row">
+            <select id="date-select" onchange="switchDate()">
+                <option value="8/21">8/21</option>
+                <option value="8/22">8/22</option>
+                <option value="8/23">8/23</option>
+            </select>
+            <div class="lang-group">
+                <button class="btn-ui" onclick="setLang('zh')">中</button>
+                <button class="btn-ui" onclick="setLang('en')">EN</button>
+                <button class="btn-ui" onclick="setLang('th')">TH</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── Notify Bar ── -->
+    <div id="notify-bar">⏳ 載入中...</div>
+
+    <!-- ── Seat Map ── -->
+    <div class="map-wrapper" id="map-wrapper">
+        <img id="seat-img" src="seatmap.jpg" alt="Seat Map">
+    </div>
+    <div id="name-tooltip" class="name-tooltip"></div>
+
+    <!-- ── Stats ── -->
+    <div class="stats-area">
+        <h3 id="ui-count-label">已入座：0 人</h3>
+        <div class="stats-btn-group">
+            <button class="btn-list" onclick="openModal('list-modal')">💖 List</button>
+            <button class="btn-list btn-list-outline" id="ui-mine-btn" onclick="openModal('mine-modal')">🔑 我的座位</button>
+        </div>
+    </div>
+
+</div>
+
+<!-- ════════════════════════════════════════
+     聊天抽屜（區域聊天 + 全場聊天室）
+     ════════════════════════════════════════ -->
+
+<button class="chat-toggle-btn" id="ui-chat-toggle" style="top:42%;" onclick="openChat()">📍 區域聊天</button>
+<button class="chat-toggle-btn" id="ui-global-chat-toggle" style="top:58%; background:#fff; color:#000;" onclick="openGlobalChat()">🌐 全場聊天室</button>
+
 <div class="chat-overlay" id="chat-overlay" onclick="closeChat()"></div>
 <div class="chat-overlay" id="global-chat-overlay" onclick="closeGlobalChat()"></div>
 
-<!-- ── 聊天抽屜 ── -->
+<!-- ── 區域聊天抽屜 ── -->
 <div class="chat-drawer" id="chat-drawer">
     <div class="chat-drawer-header">
         <h3 id="ui-chat-title">💬 聊天室</h3>
         <button class="chat-close-btn" onclick="closeChat()">✕</button>
     </div>
-    <p id="ui-chat-view-label" style="margin:8px 12px 4px; font-size:11px; color:rgba(255,255,255,0.5);">👀 正在觀看</p>
-    <select class="form-input" id="chat-zone-select" onchange="loadChatMessages()" style="margin:0 12px; width:calc(100% - 24px);">
+
+    <p id="ui-chat-view-label" class="modal-hint-sm">👀 正在觀看</p>
+    <select class="form-input chat-zone-select" id="chat-zone-select" onchange="loadChatMessages()">
         <option value="">全部區域</option>
         <option value="A1">A1</option>
         <option value="A2">A2</option>
@@ -71,9 +117,11 @@
         <option value="R">R</option>
         <option value="S">S</option>
     </select>
+
     <div class="chat-messages" id="chat-messages"></div>
-    <p id="ui-chat-send-label" style="margin:6px 12px 2px; font-size:11px; color:rgba(255,255,255,0.5);">📤 發送到</p>
-    <select class="form-input" id="chat-send-zone-select" style="margin:0 12px 8px; width:calc(100% - 24px);">
+
+    <p id="ui-chat-send-label" class="modal-hint-sm">📤 發送到</p>
+    <select class="form-input chat-zone-select-send" id="chat-send-zone-select">
         <option value="ALL" id="ui-chat-zone-all">🌐 全部區域（ALL）</option>
         <option value="A1">A1</option>
         <option value="A2">A2</option>
@@ -118,8 +166,9 @@
         <option value="R">R</option>
         <option value="S">S</option>
     </select>
+
     <div class="chat-input-row">
-        <input type="text" id="chat-name" placeholder="暱稱" style="flex:0 0 70px;">
+        <input type="text" id="chat-name" class="chat-name-input" placeholder="暱稱">
         <input type="text" id="chat-input" placeholder="說點什麼...">
         <button class="chat-send-btn" id="ui-chat-send" onclick="sendChatMessage()">送出</button>
     </div>
@@ -133,57 +182,19 @@
     </div>
     <div class="chat-messages" id="global-chat-messages"></div>
     <div class="chat-input-row">
-        <input type="text" id="global-chat-name" placeholder="暱稱" style="flex:0 0 70px;">
+        <input type="text" id="global-chat-name" class="chat-name-input" placeholder="暱稱">
         <input type="text" id="global-chat-input" placeholder="說點什麼...">
         <button class="chat-send-btn" id="ui-global-chat-send" onclick="sendGlobalChatMessage()">送出</button>
     </div>
 </div>
 
-<div class="container">
-
-    <!-- ── Header ── -->
-    <header>
-        <h1 id="ui-title">POND PHUWIN · Space Soul-dyssey CONCERT</h1>
-        <p style="margin:-4px 0 8px; text-align:right; font-size:9px; color:rgba(255,255,255,0.35);">圖片CR.小紅書Arizzzzzz_</p>
-        <div class="control-row">
-            <select id="date-select" onchange="switchDate()">
-                <option value="8/21">8/21</option>
-                <option value="8/22">8/22</option>
-                <option value="8/23">8/23</option>
-            </select>
-            <div class="lang-group">
-                <button class="btn-ui" onclick="setLang('zh')">中</button>
-                <button class="btn-ui" onclick="setLang('en')">EN</button>
-                <button class="btn-ui" onclick="setLang('th')">TH</button>
-            </div>
-        </div>
-    </header>
-
-    <!-- ── Notify Bar ── -->
-    <div id="notify-bar">⏳ 載入中...</div>
-
-    <!-- ── Seat Map ── -->
-    <div class="map-wrapper" id="map-wrapper">
-        <img id="seat-img" src="seatmap.jpg" alt="Seat Map">
-    </div>
-    <div id="name-tooltip" class="name-tooltip"></div>
-
-    <!-- ── Stats ── -->
-    <div class="stats-area">
-        <h3 id="ui-count-label">已入座：0 人</h3>
-        <div style="display:flex; gap:6px;">
-            <button class="btn-list" onclick="openModal('list-modal')">💖 List</button>
-            <button class="btn-list" id="ui-mine-btn" onclick="openModal('mine-modal')" style="background:transparent; border:1px solid var(--main); color:var(--main);">🔑 我的座位</button>
-        </div>
-    </div>
-
-</div>
-
-<!-- ── 登記座位 Modal ── -->
+<!-- ════════════════════════════════════════
+     Modal：登記座位
+     ════════════════════════════════════════ -->
 <div class="modal" id="modal">
     <div class="modal-content">
         <h3 id="ui-m-title">登記座位</h3>
-        <input  class="form-input" type="text"   id="name" placeholder="暱稱">
+        <input class="form-input" type="text" id="name" placeholder="暱稱">
         <select class="form-input" id="zone">
             <option value="" id="ui-zone-placeholder">選擇你的座位區域</option>
             <option value="A1">A1</option>
@@ -229,7 +240,7 @@
             <option value="R">R</option>
             <option value="S">S</option>
         </select>
-        <input  class="form-input" type="file"   id="img"  accept="image/*">
+        <input class="form-input" type="file" id="img" accept="image/*">
         <select class="form-input" id="emoji">
             <option value="" id="ui-emoji-placeholder">或選 Emoji（不上傳圖片時使用）</option>
             <option value="🐻">🐻 熊熊</option>
@@ -241,46 +252,50 @@
             <option value="🌙">🌙 月亮</option>
             <option value="⭐">⭐ 星星</option>
         </select>
-        <button class="btn-confirm"   id="ui-btn"        onclick="save()">確認登記</button>
+        <button class="btn-confirm" id="ui-btn" onclick="save()">確認登記</button>
         <button class="btn-secondary" id="ui-cancel-btn" onclick="closeModal('modal')">取消</button>
     </div>
 </div>
 
-<!-- ── 登記成功，顯示密碼 Modal ── -->
+<!-- ════════════════════════════════════════
+     Modal：登記成功，顯示密碼
+     ════════════════════════════════════════ -->
 <div class="modal" id="pin-modal">
     <div class="modal-content">
         <h3 id="ui-pin-title">🎉 登記成功！</h3>
-        <p id="ui-pin-desc" style="color:rgba(255,255,255,0.7); font-size:13px; margin-bottom:8px;">
-            請記住這組密碼，之後可用來修改或刪除你的座位：
-        </p>
-        <div id="pin-display" style="font-size:32px; font-weight:700; color:var(--main); text-align:center; letter-spacing:8px; background:rgba(0,255,204,0.08); border:1px solid var(--main); border-radius:10px; padding:16px; margin-bottom:14px;"></div>
+        <p id="ui-pin-desc" class="modal-hint">請記住這組密碼，之後可用來修改或刪除你的座位：</p>
+        <div id="pin-display" class="pin-display-box"></div>
         <button class="btn-confirm" id="ui-pin-confirm" onclick="closeModal('pin-modal')">我記住了</button>
     </div>
 </div>
 
-<!-- ── 我的座位（憑密碼修改/刪除） Modal ── -->
+<!-- ════════════════════════════════════════
+     Modal：我的座位（憑密碼修改／刪除）
+     ════════════════════════════════════════ -->
 <div class="modal" id="mine-modal">
     <div class="modal-content">
         <h3 id="ui-mine-title">🔑 我的座位</h3>
         <input class="form-input" type="text" id="mine-name" placeholder="暱稱">
         <input class="form-input" type="text" id="mine-pin" placeholder="4 位數密碼" maxlength="4" inputmode="numeric">
         <button class="btn-confirm" id="ui-mine-query" onclick="verifyMine()">查詢</button>
-        <div id="mine-result" style="margin-top:14px;"></div>
-        <button class="btn-secondary" id="ui-mine-close" onclick="closeModal('mine-modal')" style="margin-top:10px;">關閉</button>
+        <div id="mine-result" class="modal-spacer-top-lg"></div>
+        <button class="btn-secondary modal-spacer-top" id="ui-mine-close" onclick="closeModal('mine-modal')">關閉</button>
     </div>
 </div>
 
-<!-- ── 名單 Modal ── -->
+<!-- ════════════════════════════════════════
+     Modal：名單列表（含分享模式）
+     ════════════════════════════════════════ -->
 <div class="modal" id="list-modal">
     <div class="modal-content">
         <h3 id="ui-list-title">💖 名單列表</h3>
-        <input class="form-input" type="text" id="search-input" placeholder="🔍 搜尋暱稱..." oninput="renderList()" style="margin-bottom:10px;">
+        <input class="form-input" type="text" id="search-input" placeholder="🔍 搜尋暱稱..." oninput="renderList()">
 
-        <button class="btn-ui" id="ui-share-toggle" onclick="toggleShareMode()" style="width:100%; padding:8px; font-size:13px; margin-bottom:10px;">📤 分享模式</button>
+        <button class="btn-ui btn-full-compact" id="ui-share-toggle" onclick="toggleShareMode()">📤 分享模式</button>
 
-        <div id="share-toolbar" style="display:none; background:rgba(0,255,204,0.08); border:1px solid var(--main); border-radius:10px; padding:10px; margin-bottom:10px;">
-            <p id="ui-share-hint" style="font-size:12px; color:rgba(255,255,255,0.7); margin:0 0 8px;">勾選想要分享的人，最多 10 位</p>
-            <button class="btn-confirm" id="ui-share-generate" onclick="generateShareLink()" style="padding:9px; font-size:13px; margin:0;">🔗 產生分享連結</button>
+        <div id="share-toolbar" class="share-toolbar">
+            <p id="ui-share-hint" class="modal-hint">勾選想要分享的人，最多 10 位</p>
+            <button class="btn-confirm btn-confirm-compact" id="ui-share-generate" onclick="generateShareLink()">🔗 產生分享連結</button>
         </div>
 
         <div id="seat-list"></div>
@@ -290,14 +305,16 @@
     </div>
 </div>
 
-<!-- ── 分享連結結果 Modal ── -->
+<!-- ════════════════════════════════════════
+     Modal：分享連結結果
+     ════════════════════════════════════════ -->
 <div class="modal" id="share-result-modal">
     <div class="modal-content">
         <h3 id="ui-share-result-title">🔗 分享連結已產生</h3>
-        <p style="font-size:12px; color:rgba(255,255,255,0.6); margin-bottom:8px;" id="ui-share-result-hint">複製這個連結分享出去，打開後只會看到被選中的人</p>
+        <p id="ui-share-result-hint" class="modal-hint">複製這個連結分享出去，打開後只會看到被選中的人</p>
         <input class="form-input" type="text" id="share-link-output" readonly style="font-size:12px;">
         <button class="btn-confirm" id="ui-share-copy" onclick="copyShareLink()">📋 複製連結</button>
-        <button class="btn-secondary" id="ui-share-close" onclick="closeModal('share-result-modal')" style="margin-top:8px;">關閉</button>
+        <button class="btn-secondary modal-spacer-top" id="ui-share-close" onclick="closeModal('share-result-modal')">關閉</button>
     </div>
 </div>
 
