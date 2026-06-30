@@ -57,7 +57,14 @@ const i18n = {
         mineDeleteOk: "✅ 已刪除座位",
         pinSuccessTitle: "🎉 登記成功！",
         pinSuccessDesc:  "請記住這組密碼，之後可用來修改或刪除你的座位：",
-        pinConfirmBtn:   "我記住了"
+        pinConfirmBtn:   "我記住了",
+        chatToggle: "💬 聊天",
+        chatTitle:  "💬 聊天室",
+        chatSend:   "送出",
+        chatNamePh: "暱稱",
+        chatInputPh: "說點什麼...",
+        chatEmpty:  "目前還沒有人留言，搶頭香！",
+        chatNeedInput: "請輸入暱稱和訊息內容"
     },
     en: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -89,7 +96,14 @@ const i18n = {
         mineDeleteOk: "✅ Seat deleted",
         pinSuccessTitle: "🎉 Registered!",
         pinSuccessDesc:  "Please remember this PIN — you can use it later to edit or delete your seat:",
-        pinConfirmBtn:   "Got it"
+        pinConfirmBtn:   "Got it",
+        chatToggle: "💬 Chat",
+        chatTitle:  "💬 Chat Room",
+        chatSend:   "Send",
+        chatNamePh: "Name",
+        chatInputPh: "Say something...",
+        chatEmpty:  "No messages yet, be the first!",
+        chatNeedInput: "Please enter a nickname and message"
     },
     th: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -121,7 +135,14 @@ const i18n = {
         mineDeleteOk: "✅ ลบที่นั่งแล้ว",
         pinSuccessTitle: "🎉 ลงทะเบียนสำเร็จ!",
         pinSuccessDesc:  "กรุณาจำรหัสนี้ไว้ ใช้สำหรับแก้ไขหรือลบที่นั่งของคุณในอนาคต:",
-        pinConfirmBtn:   "จำแล้ว"
+        pinConfirmBtn:   "จำแล้ว",
+        chatToggle: "💬 แชท",
+        chatTitle:  "💬 ห้องแชท",
+        chatSend:   "ส่ง",
+        chatNamePh: "ชื่อเล่น",
+        chatInputPh: "พิมพ์ข้อความ...",
+        chatEmpty:  "ยังไม่มีข้อความ มาเป็นคนแรกสิ!",
+        chatNeedInput: "กรุณากรอกชื่อเล่นและข้อความ"
     }
 };
 
@@ -155,6 +176,12 @@ function setLang(l) {
     setText('ui-pin-desc', d.pinSuccessDesc);
     setText('ui-pin-confirm', d.pinConfirmBtn);
 
+    setText('ui-chat-toggle', d.chatToggle);
+    setText('ui-chat-title', d.chatTitle);
+    setText('ui-chat-send', d.chatSend);
+    setAttr('chat-name', 'placeholder', d.chatNamePh);
+    setAttr('chat-input', 'placeholder', d.chatInputPh);
+
     const bar = document.getElementById('notify-bar');
     if (bar && bar.dataset.isUser !== 'true') bar.textContent = d.wait;
     render();
@@ -179,6 +206,12 @@ async function switchDate() {
     if (bar) { bar.dataset.isUser = 'false'; bar.textContent = i18n[getLang()].loading; }
     await loadSeats();
     if (bar && bar.dataset.isUser !== 'true') bar.textContent = i18n[getLang()].wait;
+
+    // 若聊天抽屜開著，切換場次後重新載入對應聊天訊息
+    const chatDrawer = document.getElementById('chat-drawer');
+    if (chatDrawer && chatDrawer.classList.contains('open')) {
+        await loadChatMessages();
+    }
 }
 
 // ────────────────────────────────────────────
@@ -634,6 +667,130 @@ async function deleteMySeat(seat) {
         closeModal('mine-modal');
     }
 }
+
+// ────────────────────────────────────────────
+// 聊天室（按場次分區，輪詢更新）
+// ────────────────────────────────────────────
+let chatPollTimer = null;
+
+function openChat() {
+    document.getElementById('chat-drawer').classList.add('open');
+    document.getElementById('chat-overlay').classList.add('show');
+    loadChatMessages();
+    if (chatPollTimer) clearInterval(chatPollTimer);
+    chatPollTimer = setInterval(loadChatMessages, 8000); // 聊天室更新頻率比座位快一些
+}
+
+function closeChat() {
+    document.getElementById('chat-drawer').classList.remove('open');
+    document.getElementById('chat-overlay').classList.remove('show');
+    if (chatPollTimer) { clearInterval(chatPollTimer); chatPollTimer = null; }
+}
+
+async function loadChatMessages() {
+    const { data, error } = await db
+        .from('chat_messages')
+        .select('*')
+        .eq('date', currentDate)
+        .order('created_at', { ascending: true })
+        .limit(200);
+
+    if (error) { console.error('Chat load error:', error); return; }
+
+    renderChatMessages(data || []);
+}
+
+function renderChatMessages(messages) {
+    const container = document.getElementById('chat-messages');
+    if (!container) return;
+
+    const wasAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 30;
+
+    container.innerHTML = '';
+    const d = i18n[getLang()];
+
+    if (messages.length === 0) {
+        const p = document.createElement('p');
+        p.style.cssText = 'text-align:center; color:rgba(255,255,255,0.4); font-size:13px; margin-top:20px;';
+        p.textContent = d.chatEmpty;
+        container.appendChild(p);
+        return;
+    }
+
+    messages.forEach(msg => {
+        const item = document.createElement('div');
+        item.className = 'chat-msg';
+
+        const nameEl = document.createElement('span');
+        nameEl.className = 'chat-msg-name';
+        nameEl.textContent = msg.name;
+        item.appendChild(nameEl);
+
+        const textEl = document.createElement('span');
+        textEl.className = 'chat-msg-text';
+        textEl.textContent = msg.message;
+        item.appendChild(textEl);
+
+        if (isAdmin) {
+            const delBtn = document.createElement('button');
+            delBtn.className = 'chat-msg-del';
+            delBtn.textContent = '✕';
+            delBtn.onclick = () => deleteChatMessage(msg.id);
+            item.appendChild(delBtn);
+        }
+
+        container.appendChild(item);
+    });
+
+    if (wasAtBottom) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+async function sendChatMessage() {
+    const nameEl  = document.getElementById('chat-name');
+    const inputEl = document.getElementById('chat-input');
+    const d = i18n[getLang()];
+
+    const name = nameEl.value.trim();
+    const message = inputEl.value.trim();
+
+    if (!name || !message) {
+        alert(d.chatNeedInput);
+        return;
+    }
+
+    const { error } = await db.from('chat_messages').insert({
+        date: currentDate,
+        name: name,
+        message: message
+    });
+
+    if (error) {
+        console.error('Send chat error:', error);
+        alert('送出失敗，請再試一次');
+        return;
+    }
+
+    inputEl.value = '';
+    await loadChatMessages();
+}
+
+async function deleteChatMessage(id) {
+    const { error } = await db.from('chat_messages').delete().eq('id', id);
+    if (error) console.error('Delete chat error:', error);
+    else await loadChatMessages();
+}
+
+// Enter 鍵送出訊息
+document.addEventListener('DOMContentLoaded', () => {
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendChatMessage();
+        });
+    }
+});
 
 // ────────────────────────────────────────────
 // 點擊背景關閉 Modal
