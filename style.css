@@ -160,17 +160,17 @@ h1 {
 /* ── Seat Node ── */
 .node {
     position: absolute;
-    width: 24px;
-    height: 24px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
-    border: 2px solid rgba(0, 255, 204, 0.8);
+    border: 1.5px solid rgba(0, 255, 204, 0.8);
     background: #111;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
+    font-size: 10px;
     transform: translate(-50%, -50%);
-    box-shadow: 0 0 6px rgba(0, 255, 204, 0.4);
+    box-shadow: 0 0 4px rgba(0, 255, 204, 0.4);
     pointer-events: auto;         /* 改為可點擊，顯示暱稱 */
     cursor: pointer;
     transition: transform 0.15s;
