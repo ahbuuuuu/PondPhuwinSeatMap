@@ -65,7 +65,13 @@ const i18n = {
         chatInputPh: "說點什麼...",
         chatEmpty:  "目前還沒有人留言，搶頭香！",
         chatNeedInput: "請輸入暱稱和訊息內容",
-        zonePh: "選擇你的座位區域"
+        zonePh: "選擇你的座位區域",
+        chatViewLabel: "👀 正在觀看",
+        chatSendLabel: "📤 發送到",
+        chatZoneAll: "🌐 全部區域（ALL）",
+        chatToggleArea: "📍 區域聊天",
+        globalChatToggle: "🌐 全場聊天室",
+        globalChatTitle:  "🌐 全場聊天室"
     },
     en: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -105,7 +111,13 @@ const i18n = {
         chatInputPh: "Say something...",
         chatEmpty:  "No messages yet, be the first!",
         chatNeedInput: "Please enter a nickname and message",
-        zonePh: "Select your seating zone"
+        zonePh: "Select your seating zone",
+        chatViewLabel: "👀 Viewing",
+        chatSendLabel: "📤 Send to",
+        chatZoneAll: "🌐 All Zones (ALL)",
+        chatToggleArea: "📍 Zone Chat",
+        globalChatToggle: "🌐 Global Chat",
+        globalChatTitle:  "🌐 Global Chat"
     },
     th: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -145,7 +157,13 @@ const i18n = {
         chatInputPh: "พิมพ์ข้อความ...",
         chatEmpty:  "ยังไม่มีข้อความ มาเป็นคนแรกสิ!",
         chatNeedInput: "กรุณากรอกชื่อเล่นและข้อความ",
-        zonePh: "เลือกโซนที่นั่งของคุณ"
+        zonePh: "เลือกโซนที่นั่งของคุณ",
+        chatViewLabel: "👀 กำลังดู",
+        chatSendLabel: "📤 ส่งไปยัง",
+        chatZoneAll: "🌐 ทุกโซน (ALL)",
+        chatToggleArea: "📍 แชทตามโซน",
+        globalChatToggle: "🌐 แชทรวม",
+        globalChatTitle:  "🌐 แชทรวม"
     }
 };
 
@@ -185,6 +203,15 @@ function setLang(l) {
     setAttr('chat-name', 'placeholder', d.chatNamePh);
     setAttr('chat-input', 'placeholder', d.chatInputPh);
     setText('ui-zone-placeholder', d.zonePh);
+    setText('ui-chat-view-label', d.chatViewLabel);
+    setText('ui-chat-send-label', d.chatSendLabel);
+    setText('ui-chat-zone-all', d.chatZoneAll);
+    setText('ui-chat-toggle', d.chatToggleArea);
+    setText('ui-global-chat-toggle', d.globalChatToggle);
+    setText('ui-global-chat-title', d.globalChatTitle);
+    setText('ui-global-chat-send', d.chatSend);
+    setAttr('global-chat-name', 'placeholder', d.chatNamePh);
+    setAttr('global-chat-input', 'placeholder', d.chatInputPh);
 
     const bar = document.getElementById('notify-bar');
     if (bar && bar.dataset.isUser !== 'true') bar.textContent = d.wait;
@@ -704,7 +731,11 @@ async function loadChatMessages() {
         .order('created_at', { ascending: true })
         .limit(200);
 
-    if (zone) query = query.eq('zone', zone);
+    if (zone) {
+        // 看特定區域時：該區域訊息 + 廣播給全部區域（ALL）的訊息都要顯示
+        query = query.or(`zone.eq.${zone},zone.eq.ALL`);
+    }
+    // zone 為空（查看全部區域）時不加篩選，顯示所有訊息
 
     const { data, error } = await query;
 
@@ -736,7 +767,8 @@ function renderChatMessages(messages) {
 
         const nameEl = document.createElement('span');
         nameEl.className = 'chat-msg-name';
-        nameEl.textContent = msg.zone ? `${msg.name} · ${msg.zone}` : msg.name;
+        const zoneLabel = msg.zone === 'ALL' ? '🌐 ALL' : msg.zone;
+        nameEl.textContent = zoneLabel ? `${msg.name} · ${zoneLabel}` : msg.name;
         item.appendChild(nameEl);
 
         const textEl = document.createElement('span');
@@ -763,20 +795,15 @@ function renderChatMessages(messages) {
 async function sendChatMessage() {
     const nameEl  = document.getElementById('chat-name');
     const inputEl = document.getElementById('chat-input');
-    const zoneSelect = document.getElementById('chat-zone-select');
+    const sendZoneSelect = document.getElementById('chat-send-zone-select');
     const d = i18n[getLang()];
 
     const name = nameEl.value.trim();
     const message = inputEl.value.trim();
-    const zone = zoneSelect ? zoneSelect.value : '';
+    const zone = sendZoneSelect ? sendZoneSelect.value : 'ALL';
 
     if (!name || !message) {
         alert(d.chatNeedInput);
-        return;
-    }
-
-    if (!zone) {
-        alert(getLang() === 'th' ? 'กรุณาเลือกโซนก่อนส่งข้อความ' : getLang() === 'en' ? 'Please select a zone first' : '請先選擇要發言的區域');
         return;
     }
 
@@ -803,12 +830,135 @@ async function deleteChatMessage(id) {
     else await loadChatMessages();
 }
 
+// ────────────────────────────────────────────
+// 全場聊天室（不分場次、不分區域，所有人共用）
+// ────────────────────────────────────────────
+let globalChatPollTimer = null;
+
+function openGlobalChat() {
+    document.getElementById('global-chat-drawer').classList.add('open');
+    document.getElementById('global-chat-overlay').classList.add('show');
+    loadGlobalChatMessages();
+    if (globalChatPollTimer) clearInterval(globalChatPollTimer);
+    globalChatPollTimer = setInterval(loadGlobalChatMessages, 8000);
+}
+
+function closeGlobalChat() {
+    document.getElementById('global-chat-drawer').classList.remove('open');
+    document.getElementById('global-chat-overlay').classList.remove('show');
+    if (globalChatPollTimer) { clearInterval(globalChatPollTimer); globalChatPollTimer = null; }
+}
+
+async function loadGlobalChatMessages() {
+    // 不限定 date（跨場次共用），zone 固定為 GLOBAL
+    const { data, error } = await db
+        .from('chat_messages')
+        .select('*')
+        .eq('zone', 'GLOBAL')
+        .order('created_at', { ascending: true })
+        .limit(200);
+
+    if (error) { console.error('Global chat load error:', error); return; }
+
+    renderGlobalChatMessages(data || []);
+}
+
+function renderGlobalChatMessages(messages) {
+    const container = document.getElementById('global-chat-messages');
+    if (!container) return;
+
+    const wasAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 30;
+
+    container.innerHTML = '';
+    const d = i18n[getLang()];
+
+    if (messages.length === 0) {
+        const p = document.createElement('p');
+        p.style.cssText = 'text-align:center; color:rgba(255,255,255,0.4); font-size:13px; margin-top:20px;';
+        p.textContent = d.chatEmpty;
+        container.appendChild(p);
+        return;
+    }
+
+    messages.forEach(msg => {
+        const item = document.createElement('div');
+        item.className = 'chat-msg';
+
+        const nameEl = document.createElement('span');
+        nameEl.className = 'chat-msg-name';
+        nameEl.textContent = msg.name;
+        item.appendChild(nameEl);
+
+        const textEl = document.createElement('span');
+        textEl.className = 'chat-msg-text';
+        textEl.textContent = msg.message;
+        item.appendChild(textEl);
+
+        if (isAdmin) {
+            const delBtn = document.createElement('button');
+            delBtn.className = 'chat-msg-del';
+            delBtn.textContent = '✕';
+            delBtn.onclick = () => deleteGlobalChatMessage(msg.id);
+            item.appendChild(delBtn);
+        }
+
+        container.appendChild(item);
+    });
+
+    if (wasAtBottom) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+async function sendGlobalChatMessage() {
+    const nameEl  = document.getElementById('global-chat-name');
+    const inputEl = document.getElementById('global-chat-input');
+    const d = i18n[getLang()];
+
+    const name = nameEl.value.trim();
+    const message = inputEl.value.trim();
+
+    if (!name || !message) {
+        alert(d.chatNeedInput);
+        return;
+    }
+
+    const { error } = await db.from('chat_messages').insert({
+        date: null,       // 全場聊天室不綁定特定場次
+        name: name,
+        message: message,
+        zone: 'GLOBAL'
+    });
+
+    if (error) {
+        console.error('Send global chat error:', error);
+        alert('送出失敗，請再試一次');
+        return;
+    }
+
+    inputEl.value = '';
+    await loadGlobalChatMessages();
+}
+
+async function deleteGlobalChatMessage(id) {
+    const { error } = await db.from('chat_messages').delete().eq('id', id);
+    if (error) console.error('Delete global chat error:', error);
+    else await loadGlobalChatMessages();
+}
+
 // Enter 鍵送出訊息
 document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('chat-input');
     if (chatInput) {
         chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') sendChatMessage();
+        });
+    }
+
+    const globalChatInput = document.getElementById('global-chat-input');
+    if (globalChatInput) {
+        globalChatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendGlobalChatMessage();
         });
     }
 });
