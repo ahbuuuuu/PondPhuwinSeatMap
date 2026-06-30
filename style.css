@@ -353,65 +353,34 @@ h1 {
 }
 .seat-item:active { background: rgba(0,255,204,0.15); }
 
-/* ── 名單 Modal 分頁切換 ── */
-.list-tab-row {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 10px;
+/* ── 名單項目的區域標籤 ── */
+.seat-item-zone {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.45);
+    margin-left: 6px;
+    flex-shrink: 0;
 }
 
-.list-tab {
-    flex: 1;
-    padding: 8px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: transparent;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 13px;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.list-tab.active {
-    background: var(--main);
-    color: #000;
-    font-weight: 700;
-    border-color: var(--main);
-}
-
-/* ── 區域統計卡片 ── */
-.zone-stat-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
-}
-
-.zone-stat-header {
+/* ── 用戶資訊卡片 ── */
+.user-info-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 13px;
 }
 
-.zone-stat-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--main);
+.user-info-row:last-child { border-bottom: none; }
+
+.user-info-label {
+    color: rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
+    margin-right: 12px;
 }
 
-.zone-stat-count {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
-    background: rgba(0, 255, 204, 0.1);
-    border-radius: 8px;
-    padding: 2px 8px;
-}
-
-.zone-stat-names {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.75);
-    line-height: 1.6;
+.user-info-value {
+    color: #fff;
+    text-align: right;
     word-break: break-word;
 }
 
