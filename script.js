@@ -133,9 +133,9 @@ wrapper.addEventListener('click', (e) => {
 // Save Seat
 // ────────────────────────────────────────────
 // ────────────────────────────────────────────
-// 圖片壓縮（縮小到 maxSize px，品質 quality）
+// 圖片壓縮（縮小到 maxSize px，品質 quality，回傳 Blob 供上傳用）
 // ────────────────────────────────────────────
-function compressImage(file, maxSize, quality) {
+function compressImageToBlob(file, maxSize, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onerror = reject;
@@ -150,7 +150,7 @@ function compressImage(file, maxSize, quality) {
                 canvas.width  = Math.round(w);
                 canvas.height = Math.round(h);
                 canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                resolve(canvas.toDataURL('image/jpeg', quality));
+                canvas.toBlob(resolve, 'image/jpeg', quality);
             };
             img.src = ev.target.result;
         };
@@ -170,9 +170,23 @@ async function save() {
     const bar = document.getElementById('notify-bar');
     if (bar) { bar.dataset.isUser = 'true'; bar.textContent = "⏳ 登記中..."; }
 
-    let imgData = null;
+    let imgUrl = null;
     if (file) {
-        imgData = await compressImage(file, 100, 0.6); // 最大 100px，品質 60%
+        const blob = await compressImageToBlob(file, 100, 0.6); // 最大 100px，品質 60%
+        const fileName = `seat_${Date.now()}_${Math.random().toString(36).slice(2,8)}.jpg`;
+
+        const { error: uploadError } = await db.storage
+            .from('avatars')
+            .upload(fileName, blob, { contentType: 'image/jpeg' });
+
+        if (uploadError) {
+            console.error('Upload error:', uploadError);
+            if (bar) bar.textContent = "❌ 圖片上傳失敗，請再試一次";
+            return;
+        }
+
+        const { data: urlData } = db.storage.from('avatars').getPublicUrl(fileName);
+        imgUrl = urlData.publicUrl;
     }
 
     const payload = {
@@ -181,10 +195,10 @@ async function save() {
         x:        lastPos.x,
         y:        lastPos.y,
         emoji:    emoji || null,
-        img_data: imgData || null
+        img_data: imgUrl || null
     };
 
-    console.log('Inserting:', { ...payload, img_data: imgData ? '[base64]' : null });
+    console.log('Inserting:', payload);
 
     const { data, error } = await db.from('seats').insert(payload).select();
 
