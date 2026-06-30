@@ -879,10 +879,15 @@ function render() {
 
         // 點頭像顯示暱稱（截圖模式下不需要互動）
         if (!screenshotMode) {
-            node.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showNameTooltip(node, s.name);
-            });
+            if (isAdmin) {
+                // Admin 模式：支援拖曳座位到新位置（按住移動超過閾值才視為拖曳，否則維持點擊顯示暱稱）
+                attachAdminDragHandlers(node, s);
+            } else {
+                node.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showNameTooltip(node, s.name);
+                });
+            }
         }
 
         wrapper.appendChild(node);
@@ -901,6 +906,104 @@ function toggleAvatarsVisibility() {
 
     const btn = document.getElementById('ui-toggle-avatars');
     if (btn) btn.textContent = avatarsHidden ? '👁️‍🗨️' : '👁️';
+}
+
+
+/* ────────────────────────────────────────────
+   11-2. Admin 拖曳移動座位（按住頭像拖曳到新位置，鬆手即儲存）
+   ──────────────────────────────────────────── */
+const ADMIN_DRAG_THRESHOLD = 6; // 移動超過此距離（像素）才視為拖曳，否則視為點擊
+
+function attachAdminDragHandlers(node, seat) {
+    let isDragging = false;
+    let didMove = false;
+    let startClientX = 0, startClientY = 0;
+
+    function getPercentPos(clientX, clientY) {
+        const rect = wrapper.getBoundingClientRect();
+        return {
+            x: Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100)),
+            y: Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100))
+        };
+    }
+
+    function onMove(clientX, clientY) {
+        const dx = clientX - startClientX;
+        const dy = clientY - startClientY;
+        if (Math.abs(dx) > ADMIN_DRAG_THRESHOLD || Math.abs(dy) > ADMIN_DRAG_THRESHOLD) {
+            didMove = true;
+        }
+        if (didMove) {
+            const pos = getPercentPos(clientX, clientY);
+            node.style.left = pos.x + '%';
+            node.style.top = pos.y + '%';
+        }
+    }
+
+    async function onEnd(clientX, clientY) {
+        isDragging = false;
+        document.removeEventListener('mousemove', mouseMoveHandler);
+        document.removeEventListener('mouseup', mouseUpHandler);
+        document.removeEventListener('touchmove', touchMoveHandler);
+        document.removeEventListener('touchend', touchEndHandler);
+
+        if (didMove) {
+            const pos = getPercentPos(clientX, clientY);
+            await saveSeatPosition(seat.id, pos.x, pos.y);
+        } else {
+            // 沒有實際拖曳，視為單純點擊，顯示暱稱
+            showNameTooltip(node, seat.name);
+        }
+    }
+
+    function mouseMoveHandler(e) { onMove(e.clientX, e.clientY); }
+    function mouseUpHandler(e) { onEnd(e.clientX, e.clientY); }
+    function touchMoveHandler(e) {
+        if (e.touches.length !== 1) return;
+        e.preventDefault();
+        onMove(e.touches[0].clientX, e.touches[0].clientY);
+    }
+    function touchEndHandler(e) {
+        const t = e.changedTouches[0];
+        onEnd(t.clientX, t.clientY);
+    }
+
+    node.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        isDragging = true;
+        didMove = false;
+        startClientX = e.clientX;
+        startClientY = e.clientY;
+        document.addEventListener('mousemove', mouseMoveHandler);
+        document.addEventListener('mouseup', mouseUpHandler);
+    });
+
+    node.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        e.stopPropagation();
+        isDragging = true;
+        didMove = false;
+        startClientX = e.touches[0].clientX;
+        startClientY = e.touches[0].clientY;
+        document.addEventListener('touchmove', touchMoveHandler, { passive: false });
+        document.addEventListener('touchend', touchEndHandler);
+    }, { passive: true });
+}
+
+// 拖曳結束後，把新座標存進資料庫
+async function saveSeatPosition(id, x, y) {
+    const { error } = await db
+        .from('seats')
+        .update({ x: x, y: y })
+        .eq('id', id);
+
+    if (error) {
+        console.error('Update position error:', error);
+        alert('位置更新失敗，請再試一次');
+        await loadSeats(); // 失敗時重新載入，恢復原本位置
+    } else {
+        await loadSeats();
+    }
 }
 
 
@@ -1563,4 +1666,3 @@ window.onload = async () => {
         }
     }
 };
-
