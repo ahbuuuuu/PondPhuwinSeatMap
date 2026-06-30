@@ -93,14 +93,32 @@ h1 {
     line-height: 1.4;
 }
 
-/* ── Seat Map ── */
-.map-wrapper {
+/* ── Seat Map：外層固定視窗（裁切超出範圍） ── */
+.map-viewport {
     position: relative;
     width: 100%;
+    aspect-ratio: 1 / 1;
     border-radius: 14px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    touch-action: manipulation;   /* 防止雙擊縮放 */
+    background: #000;
+    touch-action: none;           /* 由 JS 接管縮放/拖曳手勢 */
+}
+
+/* ── 內層：實際被縮放/平移的對象 ── */
+.map-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform-origin: 0 0;
+    will-change: transform;
+}
+
+.map-wrapper {
+    position: relative;
+    width: 100%;
     user-select: none;
     -webkit-user-select: none;
     cursor: crosshair;
@@ -111,6 +129,37 @@ h1 {
     display: block;
     pointer-events: none;         /* 防止圖片攔截點擊 */
 }
+
+/* ── 地圖縮放控制按鈕 ── */
+.map-zoom-controls {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 20;
+}
+
+.map-zoom-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 255, 204, 0.4);
+    background: rgba(11, 12, 16, 0.85);
+    color: var(--main);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.map-zoom-btn:active { background: rgba(0, 255, 204, 0.2); }
+
+.map-zoom-reset { font-size: 14px; }
 
 /* ── Seat Node ── */
 .node {
@@ -579,6 +628,10 @@ body.screenshot-mode #name-tooltip {
 body.screenshot-mode .map-wrapper {
     cursor: default;
     pointer-events: none;
+}
+
+body.screenshot-mode .map-zoom-controls {
+    display: none;
 }
 
 body.screenshot-mode .node {
