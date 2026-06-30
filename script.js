@@ -64,7 +64,8 @@ const i18n = {
         chatNamePh: "暱稱",
         chatInputPh: "說點什麼...",
         chatEmpty:  "目前還沒有人留言，搶頭香！",
-        chatNeedInput: "請輸入暱稱和訊息內容"
+        chatNeedInput: "請輸入暱稱和訊息內容",
+        zonePh: "選擇你的座位區域"
     },
     en: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -103,7 +104,8 @@ const i18n = {
         chatNamePh: "Name",
         chatInputPh: "Say something...",
         chatEmpty:  "No messages yet, be the first!",
-        chatNeedInput: "Please enter a nickname and message"
+        chatNeedInput: "Please enter a nickname and message",
+        zonePh: "Select your seating zone"
     },
     th: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -142,7 +144,8 @@ const i18n = {
         chatNamePh: "ชื่อเล่น",
         chatInputPh: "พิมพ์ข้อความ...",
         chatEmpty:  "ยังไม่มีข้อความ มาเป็นคนแรกสิ!",
-        chatNeedInput: "กรุณากรอกชื่อเล่นและข้อความ"
+        chatNeedInput: "กรุณากรอกชื่อเล่นและข้อความ",
+        zonePh: "เลือกโซนที่นั่งของคุณ"
     }
 };
 
@@ -181,6 +184,7 @@ function setLang(l) {
     setText('ui-chat-send', d.chatSend);
     setAttr('chat-name', 'placeholder', d.chatNamePh);
     setAttr('chat-input', 'placeholder', d.chatInputPh);
+    setText('ui-zone-placeholder', d.zonePh);
 
     const bar = document.getElementById('notify-bar');
     if (bar && bar.dataset.isUser !== 'true') bar.textContent = d.wait;
@@ -193,7 +197,7 @@ function setLang(l) {
 function openModal(id)  { document.getElementById(id).classList.add('show'); }
 function closeModal(id) {
     document.getElementById(id).classList.remove('show');
-    if (id === 'modal') ['name','img','emoji'].forEach(i => { const el = document.getElementById(i); if(el) el.value=''; });
+    if (id === 'modal') ['name','zone','img','emoji'].forEach(i => { const el = document.getElementById(i); if(el) el.value=''; });
 }
 
 // ────────────────────────────────────────────
@@ -271,6 +275,7 @@ function compressImageToBlob(file, maxSize, quality) {
 async function save() {
     const nameEl = document.getElementById('name');
     const name   = (nameEl && nameEl.value.trim()) ? nameEl.value.trim() : "Anonymous";
+    const zone   = document.getElementById('zone').value;
     const file   = document.getElementById('img').files[0];
     const emoji  = document.getElementById('emoji').value;
 
@@ -319,7 +324,8 @@ async function save() {
         y:        lastPos.y,
         emoji:    emoji || null,
         img_data: imgUrl || null,
-        pin:      pin
+        pin:      pin,
+        zone:     zone || null
     };
 
     console.log('Inserting:', { ...payload, pin: '[hidden]' });
@@ -688,12 +694,19 @@ function closeChat() {
 }
 
 async function loadChatMessages() {
-    const { data, error } = await db
+    const zoneSelect = document.getElementById('chat-zone-select');
+    const zone = zoneSelect ? zoneSelect.value : '';
+
+    let query = db
         .from('chat_messages')
         .select('*')
         .eq('date', currentDate)
         .order('created_at', { ascending: true })
         .limit(200);
+
+    if (zone) query = query.eq('zone', zone);
+
+    const { data, error } = await query;
 
     if (error) { console.error('Chat load error:', error); return; }
 
@@ -723,7 +736,7 @@ function renderChatMessages(messages) {
 
         const nameEl = document.createElement('span');
         nameEl.className = 'chat-msg-name';
-        nameEl.textContent = msg.name;
+        nameEl.textContent = msg.zone ? `${msg.name} · ${msg.zone}` : msg.name;
         item.appendChild(nameEl);
 
         const textEl = document.createElement('span');
@@ -750,20 +763,28 @@ function renderChatMessages(messages) {
 async function sendChatMessage() {
     const nameEl  = document.getElementById('chat-name');
     const inputEl = document.getElementById('chat-input');
+    const zoneSelect = document.getElementById('chat-zone-select');
     const d = i18n[getLang()];
 
     const name = nameEl.value.trim();
     const message = inputEl.value.trim();
+    const zone = zoneSelect ? zoneSelect.value : '';
 
     if (!name || !message) {
         alert(d.chatNeedInput);
         return;
     }
 
+    if (!zone) {
+        alert(getLang() === 'th' ? 'กรุณาเลือกโซนก่อนส่งข้อความ' : getLang() === 'en' ? 'Please select a zone first' : '請先選擇要發言的區域');
+        return;
+    }
+
     const { error } = await db.from('chat_messages').insert({
         date: currentDate,
         name: name,
-        message: message
+        message: message,
+        zone: zone
     });
 
     if (error) {
@@ -800,7 +821,7 @@ document.querySelectorAll('.modal').forEach(modal => {
         if (e.target === modal) {
             modal.classList.remove('show');
             if (modal.id === 'modal') {
-                ['name','img','emoji'].forEach(i => { const el = document.getElementById(i); if(el) el.value=''; });
+                ['name','zone','img','emoji'].forEach(i => { const el = document.getElementById(i); if(el) el.value=''; });
             }
         }
     });
