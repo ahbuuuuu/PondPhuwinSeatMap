@@ -23,6 +23,51 @@
         <h3 id="ui-chat-title">💬 聊天室</h3>
         <button class="chat-close-btn" onclick="closeChat()">✕</button>
     </div>
+    <select class="form-input" id="chat-zone-select" onchange="loadChatMessages()" style="margin:8px 12px 0; width:calc(100% - 24px);">
+        <option value="">全部區域</option>
+        <option value="A1">A1</option>
+        <option value="A2">A2</option>
+        <option value="A3">A3</option>
+        <option value="A4">A4</option>
+        <option value="B1">B1</option>
+        <option value="B2">B2</option>
+        <option value="B3">B3</option>
+        <option value="C1">C1</option>
+        <option value="C2">C2</option>
+        <option value="C3">C3</option>
+        <option value="SB">SB</option>
+        <option value="SC">SC</option>
+        <option value="SD">SD</option>
+        <option value="SE">SE</option>
+        <option value="SF">SF</option>
+        <option value="SG">SG</option>
+        <option value="SH">SH</option>
+        <option value="SI">SI</option>
+        <option value="SJ">SJ</option>
+        <option value="SK">SK</option>
+        <option value="SL">SL</option>
+        <option value="SM">SM</option>
+        <option value="SN">SN</option>
+        <option value="FF">FF</option>
+        <option value="HH">HH</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+        <option value="E">E</option>
+        <option value="F">F</option>
+        <option value="G">G</option>
+        <option value="H">H</option>
+        <option value="I">I</option>
+        <option value="J">J</option>
+        <option value="K">K</option>
+        <option value="L">L</option>
+        <option value="M">M</option>
+        <option value="N">N</option>
+        <option value="O">O</option>
+        <option value="P">P</option>
+        <option value="Q">Q</option>
+        <option value="R">R</option>
+        <option value="S">S</option>
+    </select>
     <div class="chat-messages" id="chat-messages"></div>
     <div class="chat-input-row">
         <input type="text" id="chat-name" placeholder="暱稱" style="flex:0 0 70px;">
@@ -75,6 +120,51 @@
     <div class="modal-content">
         <h3 id="ui-m-title">登記座位</h3>
         <input  class="form-input" type="text"   id="name" placeholder="暱稱">
+        <select class="form-input" id="zone">
+            <option value="" id="ui-zone-placeholder">選擇你的座位區域</option>
+            <option value="A1">A1</option>
+            <option value="A2">A2</option>
+            <option value="A3">A3</option>
+            <option value="A4">A4</option>
+            <option value="B1">B1</option>
+            <option value="B2">B2</option>
+            <option value="B3">B3</option>
+            <option value="C1">C1</option>
+            <option value="C2">C2</option>
+            <option value="C3">C3</option>
+            <option value="SB">SB</option>
+            <option value="SC">SC</option>
+            <option value="SD">SD</option>
+            <option value="SE">SE</option>
+            <option value="SF">SF</option>
+            <option value="SG">SG</option>
+            <option value="SH">SH</option>
+            <option value="SI">SI</option>
+            <option value="SJ">SJ</option>
+            <option value="SK">SK</option>
+            <option value="SL">SL</option>
+            <option value="SM">SM</option>
+            <option value="SN">SN</option>
+            <option value="FF">FF</option>
+            <option value="HH">HH</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+            <option value="G">G</option>
+            <option value="H">H</option>
+            <option value="I">I</option>
+            <option value="J">J</option>
+            <option value="K">K</option>
+            <option value="L">L</option>
+            <option value="M">M</option>
+            <option value="N">N</option>
+            <option value="O">O</option>
+            <option value="P">P</option>
+            <option value="Q">Q</option>
+            <option value="R">R</option>
+            <option value="S">S</option>
+        </select>
         <input  class="form-input" type="file"   id="img"  accept="image/*">
         <select class="form-input" id="emoji">
             <option value="" id="ui-emoji-placeholder">或選 Emoji（不上傳圖片時使用）</option>
