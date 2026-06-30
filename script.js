@@ -361,7 +361,7 @@ let mapScale = 1;
 let mapTranslateX = 0;
 let mapTranslateY = 0;
 
-const MAP_MIN_SCALE = 1;
+const MAP_MIN_SCALE = 0.6;
 const MAP_MAX_SCALE = 4;
 
 function applyMapTransform() {
@@ -371,13 +371,25 @@ function applyMapTransform() {
 // 縮放時把超出邊界的位移夾回合理範圍，避免地圖被拖出視窗外太多
 function clampMapTranslate() {
     const viewportRect = mapViewport.getBoundingClientRect();
-    const maxX = 0;
-    const minX = viewportRect.width - viewportRect.width * mapScale;
-    const maxY = 0;
-    const minY = viewportRect.height - viewportRect.height * mapScale;
+    const scaledWidth = viewportRect.width * mapScale;
+    const scaledHeight = viewportRect.height * mapScale;
 
-    mapTranslateX = Math.min(maxX, Math.max(minX, mapTranslateX));
-    mapTranslateY = Math.min(maxY, Math.max(minY, mapTranslateY));
+    if (scaledWidth <= viewportRect.width) {
+        // 地圖比視窗還小（縮小檢視）：直接置中，不允許拖出視窗
+        mapTranslateX = (viewportRect.width - scaledWidth) / 2;
+    } else {
+        const maxX = 0;
+        const minX = viewportRect.width - scaledWidth;
+        mapTranslateX = Math.min(maxX, Math.max(minX, mapTranslateX));
+    }
+
+    if (scaledHeight <= viewportRect.height) {
+        mapTranslateY = (viewportRect.height - scaledHeight) / 2;
+    } else {
+        const maxY = 0;
+        const minY = viewportRect.height - scaledHeight;
+        mapTranslateY = Math.min(maxY, Math.max(minY, mapTranslateY));
+    }
 }
 
 function zoomMap(factor, centerX, centerY) {
@@ -1348,11 +1360,20 @@ function enterScreenshotMode() {
    ──────────────────────────────────────────── */
 function syncMapViewportHeight() {
     const seatImg = document.getElementById('seat-img');
-    if (!seatImg || !seatImg.naturalWidth) return;
+    if (!seatImg) return;
+
+    // 圖片可能還沒解碼完成（手機上常見），稍後重試直到拿到真實尺寸
+    if (!seatImg.naturalWidth) {
+        setTimeout(syncMapViewportHeight, 100);
+        return;
+    }
 
     const ratio = seatImg.naturalHeight / seatImg.naturalWidth;
     const width = mapViewport.clientWidth;
-    mapViewport.style.height = (width * ratio) + 'px';
+
+    if (width > 0) {
+        mapViewport.style.height = (width * ratio) + 'px';
+    }
 
     // 視窗尺寸變動後，目前的縮放位移可能超出新邊界，重新夾回合理範圍
     clampMapTranslate();
@@ -1360,6 +1381,7 @@ function syncMapViewportHeight() {
 }
 
 window.addEventListener('resize', syncMapViewportHeight);
+window.addEventListener('orientationchange', () => setTimeout(syncMapViewportHeight, 200));
 
 
 /* ────────────────────────────────────────────
