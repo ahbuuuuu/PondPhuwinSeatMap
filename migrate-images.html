@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>圖片搬家工具 — 一次性執行</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  body { font-family: monospace; background: #0b0c10; color: #00ffcc; padding: 20px; }
+  #log { white-space: pre-wrap; font-size: 13px; line-height: 1.6; }
+  button { background: #00ffcc; color: #000; font-weight: bold; padding: 12px 20px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-bottom: 20px; }
+  button:disabled { background: #555; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<h2>📦 圖片搬家工具（Base64 → Storage）</h2>
+<p>這個工具只需要執行一次。它會找出資料庫裡所有用 Base64 存的舊圖片，<br>
+上傳到 Supabase Storage，再把資料庫的欄位換成新網址。<br>
+<b>過程中不會刪除任何照片，只是換位置存放。</b></p>
+
+<button id="runBtn" onclick="runMigration()">🚀 開始搬家</button>
+
+<div id="log"></div>
+
+<script>
+const SUPABASE_URL = "https://jnpddmlnikjtvqrgbtjo.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpucGRkbWxuaWtqdHZxcmdidGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NTA4MzEsImV4cCI6MjA5ODMyNjgzMX0.vkkF5z24fPaT7-Z2NiO6HXLyWMq8zhmmDHAo7J9ZkgE";
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false }
+});
+
+const logEl = document.getElementById('log');
+function log(msg) {
+    logEl.textContent += msg + '\n';
+    console.log(msg);
+    window.scrollTo(0, document.body.scrollHeight);
+}
+
+// 把 base64 dataURL 轉成 Blob
+function dataURLtoBlob(dataURL) {
+    const arr = dataURL.split(',');
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+    return new Blob([u8arr], { type: mime });
+}
+
+async function runMigration() {
+    const btn = document.getElementById('runBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ 執行中，請勿關閉此頁面...';
+
+    log('開始讀取資料庫...');
+
+    const { data: seats, error } = await db.from('seats').select('*');
+
+    if (error) {
+        log('❌ 讀取失敗：' + JSON.stringify(error));
+        btn.disabled = false;
+        btn.textContent = '🚀 重新嘗試';
+        return;
+    }
+
+    log(`✅ 共讀到 ${seats.length} 筆資料`);
+
+    // 篩選出還是 base64 格式（不是已經是 https 網址）的圖片
+    const toMigrate = seats.filter(s => s.img_data && s.img_data.startsWith('data:'));
+    log(`📸 其中 ${toMigrate.length} 筆需要搬家（其餘已經是網址或沒有圖片）`);
+
+    if (toMigrate.length === 0) {
+        log('🎉 沒有需要搬家的圖片，全部都已經是最新格式！');
+        btn.textContent = '✅ 完成（無需處理）';
+        return;
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < toMigrate.length; i++) {
+        const seat = toMigrate[i];
+        log(`[${i + 1}/${toMigrate.length}] 處理 ${seat.name}（id: ${seat.id}）...`);
+
+        try {
+            const blob = dataURLtoBlob(seat.img_data);
+            const fileName = `migrated_${seat.id}_${Date.now()}.jpg`;
+
+            const { error: uploadError } = await db.storage
+                .from('avatars')
+                .upload(fileName, blob, { contentType: 'image/jpeg' });
+
+            if (uploadError) {
+                log(`  ❌ 上傳失敗：${uploadError.message}`);
+                failCount++;
+                continue;
+            }
+
+            const { data: urlData } = db.storage.from('avatars').getPublicUrl(fileName);
+
+            const { error: updateError } = await db
+                .from('seats')
+                .update({ img_data: urlData.publicUrl })
+                .eq('id', seat.id);
+
+            if (updateError) {
+                log(`  ❌ 更新資料庫失敗：${updateError.message}`);
+                failCount++;
+                continue;
+            }
+
+            log(`  ✅ 成功！新網址：${urlData.publicUrl}`);
+            successCount++;
+
+        } catch (e) {
+            log(`  ❌ 發生錯誤：${e.message}`);
+            failCount++;
+        }
+
+        // 避免太快觸發 Supabase rate limit
+        await new Promise(r => setTimeout(r, 200));
+    }
+
+    log('');
+    log('════════════════════════');
+    log(`🎉 搬家完成！成功 ${successCount} 筆，失敗 ${failCount} 筆`);
+    log('════════════════════════');
+
+    btn.disabled = false;
+    btn.textContent = '✅ 已完成搬家';
+}
+</script>
+</body>
+</html>
