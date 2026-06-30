@@ -11,6 +11,26 @@
 </head>
 <body>
 
+<!-- ── 聊天抽屜切換按鈕 ── -->
+<button class="chat-toggle-btn" id="ui-chat-toggle" onclick="openChat()">💬 聊天</button>
+
+<!-- ── 聊天抽屜遮罩 ── -->
+<div class="chat-overlay" id="chat-overlay" onclick="closeChat()"></div>
+
+<!-- ── 聊天抽屜 ── -->
+<div class="chat-drawer" id="chat-drawer">
+    <div class="chat-drawer-header">
+        <h3 id="ui-chat-title">💬 聊天室</h3>
+        <button class="chat-close-btn" onclick="closeChat()">✕</button>
+    </div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-input-row">
+        <input type="text" id="chat-name" placeholder="暱稱" style="flex:0 0 70px;">
+        <input type="text" id="chat-input" placeholder="說點什麼...">
+        <button class="chat-send-btn" id="ui-chat-send" onclick="sendChatMessage()">送出</button>
+    </div>
+</div>
+
 <div class="container">
 
     <!-- ── Header ── -->
