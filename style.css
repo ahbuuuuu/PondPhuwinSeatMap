@@ -418,10 +418,12 @@ h1 {
     gap: 6px;
     padding: 10px 12px;
     border-top: 1px solid rgba(255,255,255,0.08);
+    flex-wrap: nowrap;
 }
 
 .chat-input-row input {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
     padding: 9px 10px;
     border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.15);
@@ -429,6 +431,11 @@ h1 {
     color: #fff;
     font-size: 13px;
     outline: none;
+}
+
+.chat-input-row input#chat-name,
+.chat-input-row input#global-chat-name {
+    flex: 0 0 64px;
 }
 
 .chat-input-row input:focus { border-color: var(--main); }
@@ -439,10 +446,11 @@ h1 {
     font-weight: 700;
     border: none;
     border-radius: 8px;
-    padding: 9px 14px;
+    padding: 9px 12px;
     font-size: 13px;
     cursor: pointer;
     white-space: nowrap;
+    flex: 0 0 auto;
 }
 
 .chat-overlay {
