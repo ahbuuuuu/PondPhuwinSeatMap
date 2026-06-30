@@ -23,6 +23,14 @@ let lastPos = { x: 0, y: 0 };
 let allData = { "8/21": [], "8/22": [], "8/23": [] };
 let realtimeChannel = null;
 
+// 截圖專用模式（透過分享連結進入）
+const urlParams = new URLSearchParams(window.location.search);
+const screenshotMode = urlParams.get('share') === '1';
+const screenshotIds = screenshotMode
+    ? (urlParams.get('ids') || '').split(',').map(s => parseInt(s, 10)).filter(n => !isNaN(n))
+    : [];
+const screenshotDate = urlParams.get('date');
+
 // ────────────────────────────────────────────
 // i18n
 // ────────────────────────────────────────────
@@ -71,7 +79,14 @@ const i18n = {
         chatZoneAll: "🌐 全部區域（ALL）",
         chatToggleArea: "📍 區域聊天",
         globalChatToggle: "🌐 全場聊天室",
-        globalChatTitle:  "🌐 全場聊天室"
+        globalChatTitle:  "🌐 全場聊天室",
+        shareModeEnter: "分享模式",
+        shareModeExit:  "結束分享模式",
+        shareHint:      "勾選想要分享的人，最多 10 位",
+        shareGenerate:  "🔗 產生分享連結",
+        shareResultTitle: "🔗 分享連結已產生",
+        shareResultHint:  "複製這個連結分享出去，打開後只會看到被選中的人",
+        shareCopy:        "📋 複製連結"
     },
     en: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -117,7 +132,14 @@ const i18n = {
         chatZoneAll: "🌐 All Zones (ALL)",
         chatToggleArea: "📍 Zone Chat",
         globalChatToggle: "🌐 Global Chat",
-        globalChatTitle:  "🌐 Global Chat"
+        globalChatTitle:  "🌐 Global Chat",
+        shareModeEnter: "Share Mode",
+        shareModeExit:  "Exit Share Mode",
+        shareHint:      "Select up to 10 people to share",
+        shareGenerate:  "🔗 Generate Share Link",
+        shareResultTitle: "🔗 Link Generated",
+        shareResultHint:  "Copy this link to share — only the selected people will be shown",
+        shareCopy:        "📋 Copy Link"
     },
     th: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -163,7 +185,14 @@ const i18n = {
         chatZoneAll: "🌐 ทุกโซน (ALL)",
         chatToggleArea: "📍 แชทตามโซน",
         globalChatToggle: "🌐 แชทรวม",
-        globalChatTitle:  "🌐 แชทรวม"
+        globalChatTitle:  "🌐 แชทรวม",
+        shareModeEnter: "โหมดแชร์",
+        shareModeExit:  "ออกจากโหมดแชร์",
+        shareHint:      "เลือกได้สูงสุด 10 คน",
+        shareGenerate:  "🔗 สร้างลิงก์แชร์",
+        shareResultTitle: "🔗 สร้างลิงก์แล้ว",
+        shareResultHint:  "คัดลอกลิงก์นี้ไปแชร์ จะแสดงเฉพาะคนที่เลือกเท่านั้น",
+        shareCopy:        "📋 คัดลอกลิงก์"
     }
 };
 
@@ -212,6 +241,16 @@ function setLang(l) {
     setText('ui-global-chat-send', d.chatSend);
     setAttr('global-chat-name', 'placeholder', d.chatNamePh);
     setAttr('global-chat-input', 'placeholder', d.chatInputPh);
+
+    if (!shareMode) {
+        const shareToggle = document.getElementById('ui-share-toggle');
+        if (shareToggle) shareToggle.textContent = '📤 ' + d.shareModeEnter;
+    }
+    setText('ui-share-hint', d.shareHint);
+    setText('ui-share-generate', d.shareGenerate);
+    setText('ui-share-result-title', d.shareResultTitle);
+    setText('ui-share-result-hint', d.shareResultHint);
+    setText('ui-share-copy', d.shareCopy);
 
     const bar = document.getElementById('notify-bar');
     if (bar && bar.dataset.isUser !== 'true') bar.textContent = d.wait;
@@ -426,9 +465,14 @@ function subscribeRealtime() {
 // Render（地圖）
 // ────────────────────────────────────────────
 function render() {
-    const seats = allData[currentDate] || [];
+    let seats = allData[currentDate] || [];
     const lang  = getLang();
     const d     = i18n[lang];
+
+    // 截圖專用模式：只顯示被選中的人
+    if (screenshotMode && screenshotIds.length > 0) {
+        seats = seats.filter(s => screenshotIds.includes(s.id));
+    }
 
     const countEl = document.getElementById('ui-count-label');
     if (countEl) countEl.textContent = d.count + seats.length + d.unit;
@@ -450,21 +494,26 @@ function render() {
             node.textContent = s.emoji || '👤';
         }
 
-        // 點頭像顯示暱稱
-        node.addEventListener('click', (e) => {
-            e.stopPropagation();
-            showNameTooltip(node, s.name);
-        });
+        // 點頭像顯示暱稱（截圖模式下不需要互動）
+        if (!screenshotMode) {
+            node.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showNameTooltip(node, s.name);
+            });
+        }
 
         wrapper.appendChild(node);
     });
 
-    renderList();
+    if (!screenshotMode) renderList();
 }
 
 // ────────────────────────────────────────────
 // Render（名單，支援搜尋過濾）
 // ────────────────────────────────────────────
+let shareMode = false;
+let selectedShareIds = new Set();
+
 function renderList() {
     const seats = allData[currentDate] || [];
     const lang  = getLang();
@@ -485,18 +534,46 @@ function renderList() {
         const item = document.createElement('div');
         item.className = 'seat-item';
 
+        if (shareMode) {
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = selectedShareIds.has(s.id);
+            checkbox.style.cssText = 'margin-right:8px; width:16px; height:16px; flex-shrink:0;';
+            checkbox.onclick = (e) => {
+                e.stopPropagation();
+                if (checkbox.checked) {
+                    if (selectedShareIds.size >= 10) {
+                        checkbox.checked = false;
+                        alert(lang === 'th' ? 'เลือกได้สูงสุด 10 คน' : lang === 'en' ? 'Max 10 people' : '最多只能選 10 位');
+                        return;
+                    }
+                    selectedShareIds.add(s.id);
+                } else {
+                    selectedShareIds.delete(s.id);
+                }
+            };
+            item.appendChild(checkbox);
+        }
+
         const span = document.createElement('span');
         span.textContent = s.name;
         item.appendChild(span);
 
-        // 點名單項目 → 跳到地圖位置並高亮閃爍
         item.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-del')) return; // 避免點到刪除鍵也觸發跳轉
+            if (e.target.closest('.btn-del') || e.target.tagName === 'INPUT') return;
+
+            if (shareMode) {
+                // 分享模式下點整列也等同勾選
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                if (checkbox) checkbox.click();
+                return;
+            }
+
             closeModal('list-modal');
             jumpToSeat(s.id);
         });
 
-        if (isAdmin) {
+        if (isAdmin && !shareMode) {
             const btn = document.createElement('button');
             btn.className = 'btn-del';
             btn.textContent = '✕';
@@ -512,6 +589,52 @@ function renderList() {
         p.textContent = keyword ? (lang === 'th' ? 'ไม่พบ' : lang === 'en' ? 'No results' : '找不到符合的暱稱') : d.empty;
         listEl.appendChild(p);
     }
+}
+
+function toggleShareMode() {
+    shareMode = !shareMode;
+    selectedShareIds.clear();
+    const toolbar = document.getElementById('share-toolbar');
+    const toggleBtn = document.getElementById('ui-share-toggle');
+    if (toolbar) toolbar.style.display = shareMode ? 'block' : 'none';
+    if (toggleBtn) {
+        const d = i18n[getLang()];
+        toggleBtn.textContent = shareMode ? '✕ ' + d.shareModeExit : '📤 ' + d.shareModeEnter;
+        toggleBtn.style.background = shareMode ? 'rgba(255,60,60,0.7)' : 'transparent';
+        toggleBtn.style.color = shareMode ? '#fff' : 'var(--main)';
+        toggleBtn.style.border = shareMode ? 'none' : '1px solid var(--main)';
+    }
+    renderList();
+}
+
+function generateShareLink() {
+    if (selectedShareIds.size === 0) {
+        const lang = getLang();
+        alert(lang === 'th' ? 'กรุณาเลือกอย่างน้อย 1 คน' : lang === 'en' ? 'Please select at least 1 person' : '請至少選擇 1 位');
+        return;
+    }
+
+    const ids = Array.from(selectedShareIds).join(',');
+    const url = `${window.location.origin}${window.location.pathname}?share=1&date=${encodeURIComponent(currentDate)}&ids=${ids}`;
+
+    const output = document.getElementById('share-link-output');
+    if (output) output.value = url;
+
+    closeModal('list-modal');
+    openModal('share-result-modal');
+}
+
+function copyShareLink() {
+    const output = document.getElementById('share-link-output');
+    if (!output) return;
+    output.select();
+    output.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(output.value).then(() => {
+        const lang = getLang();
+        alert(lang === 'th' ? '✅ คัดลอกแล้ว' : lang === 'en' ? '✅ Copied!' : '✅ 已複製連結');
+    }).catch(() => {
+        document.execCommand('copy');
+    });
 }
 
 // ────────────────────────────────────────────
@@ -982,11 +1105,52 @@ document.querySelectorAll('.modal').forEach(modal => {
 // ────────────────────────────────────────────
 window.onload = async () => {
     setLang(getLang());
+
+    if (screenshotMode) {
+        enterScreenshotMode();
+    }
+
     const bar = document.getElementById('notify-bar');
     if (bar) bar.textContent = i18n[getLang()].loading;
+
+    if (screenshotMode && screenshotDate) {
+        currentDate = screenshotDate;
+    }
+
     await loadSeats();
-    subscribeRealtime();
-    if (bar && bar.dataset.isUser !== 'true') {
-        bar.textContent = i18n[getLang()].wait;
+
+    if (screenshotMode) {
+        // 截圖模式不需要輪詢、不需要等待提示文字
+        if (bar) bar.style.display = 'none';
+    } else {
+        subscribeRealtime();
+        if (bar && bar.dataset.isUser !== 'true') {
+            bar.textContent = i18n[getLang()].wait;
+        }
     }
 };
+
+// ────────────────────────────────────────────
+// 進入截圖專用模式：隱藏所有按鈕與互動 UI
+// ────────────────────────────────────────────
+function enterScreenshotMode() {
+    document.body.classList.add('screenshot-mode');
+
+    const hideIds = [
+        'ui-chat-toggle', 'ui-global-chat-toggle',
+        'date-select',
+    ];
+    hideIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+
+    // 隱藏語言切換、stats-area 的按鈕（List / 我的座位）
+    document.querySelectorAll('.lang-group, .stats-area, .control-row').forEach(el => {
+        el.style.display = 'none';
+    });
+
+    // 隱藏 header 的場次/語言列，只保留標題
+    const header = document.querySelector('header');
+    if (header) header.style.borderRadius = '18px';
+}
