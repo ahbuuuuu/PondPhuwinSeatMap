@@ -254,7 +254,7 @@ function subscribeRealtime() {
 }
 
 // ────────────────────────────────────────────
-// Render
+// Render（地圖）
 // ────────────────────────────────────────────
 function render() {
     const seats = allData[currentDate] || [];
@@ -265,12 +265,11 @@ function render() {
     if (countEl) countEl.textContent = d.count + seats.length + d.unit;
 
     document.querySelectorAll('.node').forEach(n => n.remove());
-    const listEl = document.getElementById('seat-list');
-    if (listEl) listEl.innerHTML = '';
 
     seats.forEach(s => {
         const node = document.createElement('div');
         node.className  = 'node';
+        node.dataset.id  = s.id;
         node.style.left = s.x + '%';
         node.style.top  = s.y + '%';
 
@@ -281,32 +280,106 @@ function render() {
         } else {
             node.textContent = s.emoji || '👤';
         }
+
+        // 點頭像顯示暱稱
+        node.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showNameTooltip(node, s.name);
+        });
+
         wrapper.appendChild(node);
-
-        if (listEl) {
-            const item = document.createElement('div');
-            item.className = 'seat-item';
-            const span = document.createElement('span');
-            span.textContent = s.name;
-            item.appendChild(span);
-
-            if (isAdmin) {
-                const btn = document.createElement('button');
-                btn.className = 'btn-del';
-                btn.textContent = '✕';
-                btn.onclick = () => del(s.id);
-                item.appendChild(btn);
-            }
-            listEl.appendChild(item);
-        }
     });
 
-    if (listEl && seats.length === 0) {
+    renderList();
+}
+
+// ────────────────────────────────────────────
+// Render（名單，支援搜尋過濾）
+// ────────────────────────────────────────────
+function renderList() {
+    const seats = allData[currentDate] || [];
+    const lang  = getLang();
+    const d     = i18n[lang];
+
+    const listEl = document.getElementById('seat-list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    const searchEl = document.getElementById('search-input');
+    const keyword  = searchEl ? searchEl.value.trim().toLowerCase() : '';
+
+    const filtered = keyword
+        ? seats.filter(s => s.name.toLowerCase().includes(keyword))
+        : seats;
+
+    filtered.forEach(s => {
+        const item = document.createElement('div');
+        item.className = 'seat-item';
+
+        const span = document.createElement('span');
+        span.textContent = s.name;
+        item.appendChild(span);
+
+        // 點名單項目 → 跳到地圖位置並高亮閃爍
+        item.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-del')) return; // 避免點到刪除鍵也觸發跳轉
+            closeModal('list-modal');
+            jumpToSeat(s.id);
+        });
+
+        if (isAdmin) {
+            const btn = document.createElement('button');
+            btn.className = 'btn-del';
+            btn.textContent = '✕';
+            btn.onclick = (e) => { e.stopPropagation(); del(s.id); };
+            item.appendChild(btn);
+        }
+        listEl.appendChild(item);
+    });
+
+    if (filtered.length === 0) {
         const p = document.createElement('p');
         p.style.cssText = 'text-align:center;color:rgba(255,255,255,0.4);font-size:13px;margin:20px 0;';
-        p.textContent = d.empty;
+        p.textContent = keyword ? (lang === 'th' ? 'ไม่พบ' : lang === 'en' ? 'No results' : '找不到符合的暱稱') : d.empty;
         listEl.appendChild(p);
     }
+}
+
+// ────────────────────────────────────────────
+// 跳到地圖上指定座位並高亮閃爍 + 顯示暱稱
+// ────────────────────────────────────────────
+function jumpToSeat(id) {
+    const node = wrapper.querySelector(`.node[data-id="${id}"]`);
+    if (!node) return;
+
+    node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    node.classList.remove('highlight');
+    void node.offsetWidth; // 強制重啟動畫
+    node.classList.add('highlight');
+
+    const seats = allData[currentDate] || [];
+    const seat = seats.find(s => s.id === id);
+    if (seat) showNameTooltip(node, seat.name, 3000);
+
+    setTimeout(() => node.classList.remove('highlight'), 3600);
+}
+
+// ────────────────────────────────────────────
+// 顯示暱稱提示框（出現在點擊的頭像正上方）
+// ────────────────────────────────────────────
+let tooltipTimer = null;
+function showNameTooltip(node, name, duration = 2000) {
+    const tooltip = document.getElementById('name-tooltip');
+    if (!tooltip) return;
+
+    const rect = node.getBoundingClientRect();
+    tooltip.textContent = name;
+    tooltip.style.left = (rect.left + rect.width / 2) + 'px';
+    tooltip.style.top  = rect.top + 'px';
+    tooltip.style.display = 'block';
+
+    if (tooltipTimer) clearTimeout(tooltipTimer);
+    tooltipTimer = setTimeout(() => { tooltip.style.display = 'none'; }, duration);
 }
 
 // ────────────────────────────────────────────
