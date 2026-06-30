@@ -106,7 +106,12 @@ const i18n = {
         shareResultTitle: "🔗 分享連結已產生",
         shareResultHint:  "複製這個連結分享出去，打開後只會看到被選中的人",
         shareCopy:        "📋 複製連結",
-        addSeatBtn: "➕ 新增座位"
+        addSeatBtn: "➕ 新增座位",
+        tabList: "📋 名單",
+        tabStats: "📊 區域統計",
+        statsAllZones: "📊 總表（全部區域）",
+        statsOutOfZone: "(???)",
+        statsEmpty: "目前還沒有資料"
     },
     en: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -164,7 +169,12 @@ const i18n = {
         shareResultTitle: "🔗 Link Generated",
         shareResultHint:  "Copy this link to share — only the selected people will be shown",
         shareCopy:        "📋 Copy Link",
-        addSeatBtn: "➕ Add Seat"
+        addSeatBtn: "➕ Add Seat",
+        tabList: "📋 List",
+        tabStats: "📊 Zone Stats",
+        statsAllZones: "📊 Overview (All Zones)",
+        statsOutOfZone: "(???)",
+        statsEmpty: "No data yet"
     },
     th: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -222,7 +232,12 @@ const i18n = {
         shareResultTitle: "🔗 สร้างลิงก์แล้ว",
         shareResultHint:  "คัดลอกลิงก์นี้ไปแชร์ จะแสดงเฉพาะคนที่เลือกเท่านั้น",
         shareCopy:        "📋 คัดลอกลิงก์",
-        addSeatBtn: "➕ เพิ่มที่นั่ง"
+        addSeatBtn: "➕ เพิ่มที่นั่ง",
+        tabList: "📋 รายชื่อ",
+        tabStats: "📊 สถิติตามโซน",
+        statsAllZones: "📊 ภาพรวม (ทุกโซน)",
+        statsOutOfZone: "(???)",
+        statsEmpty: "ยังไม่มีข้อมูล"
     }
 };
 
@@ -294,6 +309,11 @@ function setLang(l) {
 
     // 新增座位按鈕
     setText('ui-add-seat-btn', d.addSeatBtn);
+
+    // 名單 Modal 分頁切換 / 區域統計
+    setText('ui-tab-list', d.tabList);
+    setText('ui-tab-stats', d.tabStats);
+    setText('ui-stats-all-zones', d.statsAllZones);
 
     const bar = document.getElementById('notify-bar');
     if (bar && bar.dataset.isUser !== 'true') bar.textContent = d.wait;
@@ -586,6 +606,26 @@ function jitterZoneCoord(zone) {
     };
 }
 
+// 根據實際座標 (x, y) 判斷最接近哪個座位區域；超出合理範圍視為「非座位區」
+const ZONE_MATCH_RADIUS = 9; // 容許誤差半徑（百分比），超過此距離視為不在任何座位區內
+
+function detectZoneByCoord(x, y) {
+    let closestZone = null;
+    let closestDist = Infinity;
+
+    for (const [zone, coord] of Object.entries(ZONE_COORDS)) {
+        const dx = x - coord.x;
+        const dy = y - coord.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < closestDist) {
+            closestDist = dist;
+            closestZone = zone;
+        }
+    }
+
+    return closestDist <= ZONE_MATCH_RADIUS ? closestZone : null; // null 代表不在任何座位區
+}
+
 // 「新增座位」按鈕：不需要先點地圖，直接打開登記視窗
 // 座標會在使用者選擇區域時自動對應；尚未選擇區域前先放在地圖中心點
 function openAddSeatFromButton() {
@@ -804,7 +844,15 @@ function render() {
         wrapper.appendChild(node);
     });
 
-    if (!screenshotMode) renderList();
+    if (!screenshotMode) {
+        renderList();
+
+        // 若名單 Modal 目前停留在「區域統計」分頁，資料更新時也要同步刷新
+        const statsContent = document.getElementById('stats-tab-content');
+        if (statsContent && statsContent.style.display !== 'none') {
+            renderZoneStats();
+        }
+    }
 }
 
 // 隱藏／顯示所有頭像（先看清楚座位圖底圖，再決定要不要看人群）
@@ -903,6 +951,101 @@ function renderList() {
             : d.empty;
         listEl.appendChild(p);
     }
+}
+
+
+/* ────────────────────────────────────────────
+   12-2. 名單 Modal 分頁切換（名單 / 區域統計）
+   ──────────────────────────────────────────── */
+function switchListTab(tab) {
+    const listTabBtn = document.getElementById('ui-tab-list');
+    const statsTabBtn = document.getElementById('ui-tab-stats');
+    const listContent = document.getElementById('list-tab-content');
+    const statsContent = document.getElementById('stats-tab-content');
+
+    const isStats = tab === 'stats';
+
+    listTabBtn.classList.toggle('active', !isStats);
+    statsTabBtn.classList.toggle('active', isStats);
+    listContent.style.display = isStats ? 'none' : 'block';
+    statsContent.style.display = isStats ? 'block' : 'none';
+
+    if (isStats) renderZoneStats();
+}
+
+// 區域統計：依目前場次的座位資料，按 zone 分組統計人數與名單
+function renderZoneStats() {
+    const seats = allData[currentDate] || [];
+    const lang = getLang();
+    const d = i18n[lang];
+
+    const filterEl = document.getElementById('stats-zone-filter');
+    const selectedZone = filterEl ? filterEl.value : '';
+
+    const container = document.getElementById('zone-stats-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    // 依「實際座標位置」分組，而非單純看 zone 欄位是否填寫
+    // 座標落在地圖空白處（不屬於任何座位區）的人，統一歸到 (???) 群組
+    const grouped = {};
+    seats.forEach(s => {
+        const detectedZone = detectZoneByCoord(s.x, s.y);
+        const zoneKey = detectedZone || d.statsOutOfZone;
+        if (!grouped[zoneKey]) grouped[zoneKey] = [];
+        grouped[zoneKey].push(s.name);
+    });
+
+    let zoneKeys = Object.keys(grouped);
+
+    if (selectedZone) {
+        // 只看單一區域
+        zoneKeys = zoneKeys.filter(z => z === selectedZone);
+    } else {
+        // 總表：人數由多到少排序，未分類放最後
+        zoneKeys.sort((a, b) => {
+            if (a === d.statsOutOfZone) return 1;
+            if (b === d.statsOutOfZone) return -1;
+            return grouped[b].length - grouped[a].length;
+        });
+    }
+
+    if (zoneKeys.length === 0) {
+        const p = document.createElement('p');
+        p.style.cssText = 'text-align:center;color:rgba(255,255,255,0.4);font-size:13px;margin:20px 0;';
+        p.textContent = d.statsEmpty;
+        container.appendChild(p);
+        return;
+    }
+
+    zoneKeys.forEach(zone => {
+        const names = grouped[zone];
+
+        const card = document.createElement('div');
+        card.className = 'zone-stat-card';
+
+        const header = document.createElement('div');
+        header.className = 'zone-stat-header';
+
+        const title = document.createElement('span');
+        title.className = 'zone-stat-title';
+        title.textContent = zone;
+        header.appendChild(title);
+
+        const count = document.createElement('span');
+        count.className = 'zone-stat-count';
+        count.textContent = names.length + d.unit;
+        header.appendChild(count);
+
+        card.appendChild(header);
+
+        const namesEl = document.createElement('div');
+        namesEl.className = 'zone-stat-names';
+        namesEl.textContent = names.join('、');
+        card.appendChild(namesEl);
+
+        container.appendChild(card);
+    });
 }
 
 
@@ -1478,3 +1621,4 @@ window.onload = async () => {
         }
     }
 };
+
