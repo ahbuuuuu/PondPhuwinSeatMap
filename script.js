@@ -229,15 +229,34 @@ async function save() {
 // Load from Supabase
 // ────────────────────────────────────────────
 async function loadSeats() {
-    const { data, error } = await db
-        .from('seats')
-        .select('*')
-        .order('id', { ascending: true });
+    let rows = [];
+    let batchStart = 0;
+    const batchSize = 30;
+    let hasMore = true;
 
-    if (error) { console.error('Load error:', JSON.stringify(error)); return; }
+    while (hasMore) {
+        const { data: batch, error } = await db
+            .from('seats')
+            .select('*')
+            .order('id', { ascending: true })
+            .range(batchStart, batchStart + batchSize - 1);
+
+        if (error) {
+            console.error('Load error:', JSON.stringify(error));
+            return; // 保留目前已有的 allData，不要清空畫面
+        }
+
+        rows = rows.concat(batch);
+
+        if (!batch || batch.length < batchSize) {
+            hasMore = false;
+        } else {
+            batchStart += batchSize;
+        }
+    }
 
     allData = { "8/21": [], "8/22": [], "8/23": [] };
-    (data || []).forEach(row => {
+    rows.forEach(row => {
         if (!allData[row.date]) allData[row.date] = [];
         allData[row.date].push(row);
     });
