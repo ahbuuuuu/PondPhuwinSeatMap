@@ -308,6 +308,86 @@ h1 {
     margin: 12px 0;
 }
 
+/* ── Header 副標 / Credit ── */
+.header-credit {
+    margin: -4px 0 8px;
+    text-align: right;
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.35);
+}
+
+/* ── Stats Area 按鈕群 ── */
+.stats-btn-group {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-list-outline {
+    background: transparent;
+    border: 1px solid var(--main);
+    color: var(--main);
+}
+
+/* ── Modal 內小型輔助文字 / 容器 ── */
+.modal-hint {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0 0 8px;
+}
+
+.modal-hint-sm {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 8px 12px 4px;
+}
+
+.modal-spacer-top {
+    margin-top: 10px;
+}
+
+.modal-spacer-top-lg {
+    margin-top: 14px;
+}
+
+/* ── PIN 密碼顯示框 ── */
+.pin-display-box {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--main);
+    text-align: center;
+    letter-spacing: 8px;
+    background: rgba(0, 255, 204, 0.08);
+    border: 1px solid var(--main);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+}
+
+/* ── 分享模式工具列 ── */
+.share-toolbar {
+    display: none;
+    background: rgba(0, 255, 204, 0.08);
+    border: 1px solid var(--main);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.share-toolbar.show { display: block; }
+
+.btn-full-compact {
+    width: 100%;
+    padding: 8px;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.btn-confirm-compact {
+    padding: 9px;
+    font-size: 13px;
+    margin: 0;
+}
+
 /* ════════════════════════════════════════
    側邊聊天抽屜
    ════════════════════════════════════════ */
@@ -462,6 +542,22 @@ h1 {
 }
 
 .chat-overlay.show { display: block; }
+
+/* ── 聊天室區域選單 ── */
+.chat-zone-select {
+    margin: 0 12px;
+    width: calc(100% - 24px);
+}
+
+.chat-zone-select-send {
+    margin: 0 12px 8px;
+    width: calc(100% - 24px);
+}
+
+/* ── 聊天輸入框暱稱欄固定寬度 ── */
+.chat-name-input {
+    flex: 0 0 70px;
+}
 
 /* ════════════════════════════════════════
    截圖專用模式（透過分享連結進入）
