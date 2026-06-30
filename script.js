@@ -1,11 +1,12 @@
 /* ════════════════════════════════════════
    POND PHUWIN · Space Soul-dyssey CONCERT
-   script.js — Supabase 即時同步版 v2
+   script.js — Supabase 即時同步版
    ════════════════════════════════════════ */
 
-// ────────────────────────────────────────────
-// Supabase 設定
-// ────────────────────────────────────────────
+
+/* ────────────────────────────────────────────
+   1. Supabase 連線設定
+   ──────────────────────────────────────────── */
 const SUPABASE_URL = "https://jnpddmlnikjtvqrgbtjo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpucGRkbWxuaWtqdHZxcmdidGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NTA4MzEsImV4cCI6MjA5ODMyNjgzMX0.vkkF5z24fPaT7-Z2NiO6HXLyWMq8zhmmDHAo7J9ZkgE";
 
@@ -13,17 +14,25 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false }
 });
 
-// ────────────────────────────────────────────
-// State
-// ────────────────────────────────────────────
+
+/* ────────────────────────────────────────────
+   2. 全域狀態
+   ──────────────────────────────────────────── */
 let currentDate = "8/21";
 let isAdmin = sessionStorage.getItem('admin') === 'true';
 let lastRegisteredName = "";
 let lastPos = { x: 0, y: 0 };
 let allData = { "8/21": [], "8/22": [], "8/23": [] };
-let realtimeChannel = null;
 
-// 截圖專用模式（透過分享連結進入）
+let realtimeChannel = null;   // 座位輪詢計時器
+let chatPollTimer = null;     // 區域聊天室輪詢計時器
+let globalChatPollTimer = null; // 全場聊天室輪詢計時器
+let tooltipTimer = null;      // 暱稱提示框自動隱藏計時器
+
+let shareMode = false;            // 是否處於「分享模式」
+let selectedShareIds = new Set(); // 分享模式下被勾選的座位 id
+
+// 截圖專用模式（透過分享連結進入，網址帶 ?share=1）
 const urlParams = new URLSearchParams(window.location.search);
 const screenshotMode = urlParams.get('share') === '1';
 const screenshotIds = screenshotMode
@@ -31,9 +40,10 @@ const screenshotIds = screenshotMode
     : [];
 const screenshotDate = urlParams.get('date');
 
-// ────────────────────────────────────────────
-// i18n
-// ────────────────────────────────────────────
+
+/* ────────────────────────────────────────────
+   3. 多語言文字（i18n）
+   ──────────────────────────────────────────── */
 const i18n = {
     zh: {
         title:     "POND PHUWIN · Space Soul-dyssey CONCERT",
@@ -44,6 +54,8 @@ const i18n = {
         listTitle: "💖 名單列表", ph: "暱稱",
         em:        "或選 Emoji（不上傳圖片時使用）",
         empty:     "目前還沒有人入座",
+
+        // 我的座位
         mineBtn:   "🔑 我的座位",
         mineTitle: "🔑 我的座位",
         minePh:    "暱稱",
@@ -63,10 +75,14 @@ const i18n = {
         mineDeleteConfirm: "確定要刪除這個座位嗎？此動作無法復原。",
         mineDeleteFail: "刪除失敗：",
         mineDeleteOk: "✅ 已刪除座位",
+
+        // 登記成功提示密碼
         pinSuccessTitle: "🎉 登記成功！",
         pinSuccessDesc:  "請記住這組密碼，之後可用來修改或刪除你的座位：",
         pinConfirmBtn:   "我記住了",
-        chatToggle: "💬 聊天",
+
+        // 區域聊天室
+        chatToggleArea: "📍 區域聊天",
         chatTitle:  "💬 聊天室",
         chatSend:   "送出",
         chatNamePh: "暱稱",
@@ -77,9 +93,12 @@ const i18n = {
         chatViewLabel: "👀 正在觀看",
         chatSendLabel: "📤 發送到",
         chatZoneAll: "🌐 全部區域（ALL）",
-        chatToggleArea: "📍 區域聊天",
+
+        // 全場聊天室
         globalChatToggle: "🌐 全場聊天室",
         globalChatTitle:  "🌐 全場聊天室",
+
+        // 分享模式
         shareModeEnter: "分享模式",
         shareModeExit:  "結束分享模式",
         shareHint:      "勾選想要分享的人，最多 10 位",
@@ -97,6 +116,7 @@ const i18n = {
         listTitle: "💖 List", ph: "Nickname",
         em:        "Or pick an Emoji (if no photo)",
         empty:     "No audience yet",
+
         mineBtn:   "🔑 My Seat",
         mineTitle: "🔑 My Seat",
         minePh:    "Nickname",
@@ -116,10 +136,12 @@ const i18n = {
         mineDeleteConfirm: "Are you sure you want to delete this seat? This cannot be undone.",
         mineDeleteFail: "Delete failed: ",
         mineDeleteOk: "✅ Seat deleted",
+
         pinSuccessTitle: "🎉 Registered!",
         pinSuccessDesc:  "Please remember this PIN — you can use it later to edit or delete your seat:",
         pinConfirmBtn:   "Got it",
-        chatToggle: "💬 Chat",
+
+        chatToggleArea: "📍 Zone Chat",
         chatTitle:  "💬 Chat Room",
         chatSend:   "Send",
         chatNamePh: "Name",
@@ -130,9 +152,10 @@ const i18n = {
         chatViewLabel: "👀 Viewing",
         chatSendLabel: "📤 Send to",
         chatZoneAll: "🌐 All Zones (ALL)",
-        chatToggleArea: "📍 Zone Chat",
+
         globalChatToggle: "🌐 Global Chat",
         globalChatTitle:  "🌐 Global Chat",
+
         shareModeEnter: "Share Mode",
         shareModeExit:  "Exit Share Mode",
         shareHint:      "Select up to 10 people to share",
@@ -150,6 +173,7 @@ const i18n = {
         listTitle: "💖 รายชื่อ", ph: "ชื่อเล่น",
         em:        "หรือเลือก Emoji (ถ้าไม่ได้อัปโหลดรูป)",
         empty:     "ยังไม่มีผู้ชม",
+
         mineBtn:   "🔑 ที่นั่งของฉัน",
         mineTitle: "🔑 ที่นั่งของฉัน",
         minePh:    "ชื่อเล่น",
@@ -169,10 +193,12 @@ const i18n = {
         mineDeleteConfirm: "ยืนยันลบที่นั่งนี้หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้",
         mineDeleteFail: "ลบล้มเหลว: ",
         mineDeleteOk: "✅ ลบที่นั่งแล้ว",
+
         pinSuccessTitle: "🎉 ลงทะเบียนสำเร็จ!",
         pinSuccessDesc:  "กรุณาจำรหัสนี้ไว้ ใช้สำหรับแก้ไขหรือลบที่นั่งของคุณในอนาคต:",
         pinConfirmBtn:   "จำแล้ว",
-        chatToggle: "💬 แชท",
+
+        chatToggleArea: "📍 แชทตามโซน",
         chatTitle:  "💬 ห้องแชท",
         chatSend:   "ส่ง",
         chatNamePh: "ชื่อเล่น",
@@ -183,9 +209,10 @@ const i18n = {
         chatViewLabel: "👀 กำลังดู",
         chatSendLabel: "📤 ส่งไปยัง",
         chatZoneAll: "🌐 ทุกโซน (ALL)",
-        chatToggleArea: "📍 แชทตามโซน",
+
         globalChatToggle: "🌐 แชทรวม",
         globalChatTitle:  "🌐 แชทรวม",
+
         shareModeEnter: "โหมดแชร์",
         shareModeExit:  "ออกจากโหมดแชร์",
         shareHint:      "เลือกได้สูงสุด 10 คน",
@@ -196,17 +223,21 @@ const i18n = {
     }
 };
 
-function getLang() { return localStorage.getItem('lang') || 'zh'; }
+function getLang() {
+    return localStorage.getItem('lang') || 'zh';
+}
 
-// ────────────────────────────────────────────
-// Language Switch
-// ────────────────────────────────────────────
+
+/* ────────────────────────────────────────────
+   4. 語言切換
+   ──────────────────────────────────────────── */
 function setLang(l) {
     localStorage.setItem('lang', l);
     const d = i18n[l];
     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     const setAttr = (id, a, v) => { const el = document.getElementById(id); if (el) el.setAttribute(a, v); };
 
+    // 主畫面 / 登記座位
     setText('ui-title', d.title);
     setText('ui-m-title', d.reg);
     setText('ui-btn', d.confirm);
@@ -215,33 +246,39 @@ function setLang(l) {
     setText('ui-list-title', d.listTitle);
     setText('ui-emoji-placeholder', d.em);
     setAttr('name', 'placeholder', d.ph);
+    setText('ui-zone-placeholder', d.zonePh);
 
+    // 我的座位
     setText('ui-mine-btn', d.mineBtn);
     setText('ui-mine-title', d.mineTitle);
     setAttr('mine-name', 'placeholder', d.minePh);
     setAttr('mine-pin', 'placeholder', d.minePinPh);
     setText('ui-mine-query', d.mineQuery);
     setText('ui-mine-close', d.close);
+
+    // 登記成功密碼提示
     setText('ui-pin-title', d.pinSuccessTitle);
     setText('ui-pin-desc', d.pinSuccessDesc);
     setText('ui-pin-confirm', d.pinConfirmBtn);
 
-    setText('ui-chat-toggle', d.chatToggle);
+    // 區域聊天室
+    setText('ui-chat-toggle', d.chatToggleArea);
     setText('ui-chat-title', d.chatTitle);
     setText('ui-chat-send', d.chatSend);
     setAttr('chat-name', 'placeholder', d.chatNamePh);
     setAttr('chat-input', 'placeholder', d.chatInputPh);
-    setText('ui-zone-placeholder', d.zonePh);
     setText('ui-chat-view-label', d.chatViewLabel);
     setText('ui-chat-send-label', d.chatSendLabel);
     setText('ui-chat-zone-all', d.chatZoneAll);
-    setText('ui-chat-toggle', d.chatToggleArea);
+
+    // 全場聊天室
     setText('ui-global-chat-toggle', d.globalChatToggle);
     setText('ui-global-chat-title', d.globalChatTitle);
     setText('ui-global-chat-send', d.chatSend);
     setAttr('global-chat-name', 'placeholder', d.chatNamePh);
     setAttr('global-chat-input', 'placeholder', d.chatInputPh);
 
+    // 分享模式
     if (!shareMode) {
         const shareToggle = document.getElementById('ui-share-toggle');
         if (shareToggle) shareToggle.textContent = '📤 ' + d.shareModeEnter;
@@ -254,27 +291,56 @@ function setLang(l) {
 
     const bar = document.getElementById('notify-bar');
     if (bar && bar.dataset.isUser !== 'true') bar.textContent = d.wait;
+
     render();
 }
 
-// ────────────────────────────────────────────
-// Modal Helpers
-// ────────────────────────────────────────────
-function openModal(id)  { document.getElementById(id).classList.add('show'); }
-function closeModal(id) {
-    document.getElementById(id).classList.remove('show');
-    if (id === 'modal') ['name','zone','img','emoji'].forEach(i => { const el = document.getElementById(i); if(el) el.value=''; });
+
+/* ────────────────────────────────────────────
+   5. Modal 開關工具
+   ──────────────────────────────────────────── */
+function openModal(id) {
+    document.getElementById(id).classList.add('show');
 }
 
-// ────────────────────────────────────────────
-// Date Switch
-// ────────────────────────────────────────────
+function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+    if (id === 'modal') {
+        ['name', 'zone', 'img', 'emoji'].forEach(i => {
+            const el = document.getElementById(i);
+            if (el) el.value = '';
+        });
+    }
+}
+
+// 點擊 Modal 外側暗色背景可直接關閉
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('show');
+            if (modal.id === 'modal') {
+                ['name', 'zone', 'img', 'emoji'].forEach(i => {
+                    const el = document.getElementById(i);
+                    if (el) el.value = '';
+                });
+            }
+        }
+    });
+});
+
+
+/* ────────────────────────────────────────────
+   6. 場次切換
+   ──────────────────────────────────────────── */
 async function switchDate() {
     currentDate = document.getElementById('date-select').value;
     lastRegisteredName = "";
+
     const bar = document.getElementById('notify-bar');
     if (bar) { bar.dataset.isUser = 'false'; bar.textContent = i18n[getLang()].loading; }
+
     await loadSeats();
+
     if (bar && bar.dataset.isUser !== 'true') bar.textContent = i18n[getLang()].wait;
 
     // 若聊天抽屜開著，切換場次後重新載入對應聊天訊息
@@ -284,37 +350,37 @@ async function switchDate() {
     }
 }
 
-// ────────────────────────────────────────────
-// Map Click
-// ────────────────────────────────────────────
+
+/* ────────────────────────────────────────────
+   7. 地圖點擊（新增座位）
+   ──────────────────────────────────────────── */
 const wrapper = document.getElementById('map-wrapper');
 
 wrapper.addEventListener('touchstart', (e) => {
     const t = e.touches[0];
     const rect = wrapper.getBoundingClientRect();
     lastPos = {
-        x: ((t.clientX - rect.left) / rect.width)  * 100,
-        y: ((t.clientY - rect.top)  / rect.height) * 100
+        x: ((t.clientX - rect.left) / rect.width) * 100,
+        y: ((t.clientY - rect.top) / rect.height) * 100
     };
 }, { passive: true });
 
 wrapper.addEventListener('click', (e) => {
+    // 桌機滑鼠點擊：pointerType 不是 touch，需要在這裡取座標
     if (e.pointerType !== 'touch') {
         const rect = wrapper.getBoundingClientRect();
         lastPos = {
-            x: ((e.clientX - rect.left) / rect.width)  * 100,
-            y: ((e.clientY - rect.top)  / rect.height) * 100
+            x: ((e.clientX - rect.left) / rect.width) * 100,
+            y: ((e.clientY - rect.top) / rect.height) * 100
         };
     }
     openModal('modal');
 });
 
-// ────────────────────────────────────────────
-// Save Seat
-// ────────────────────────────────────────────
-// ────────────────────────────────────────────
-// 圖片壓縮（縮小到 maxSize px，品質 quality，回傳 Blob 供上傳用）
-// ────────────────────────────────────────────
+
+/* ────────────────────────────────────────────
+   8. 圖片壓縮（上傳前縮小並轉為 Blob）
+   ──────────────────────────────────────────── */
 function compressImageToBlob(file, maxSize, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -338,6 +404,10 @@ function compressImageToBlob(file, maxSize, quality) {
     });
 }
 
+
+/* ────────────────────────────────────────────
+   9. 登記座位
+   ──────────────────────────────────────────── */
 async function save() {
     const nameEl = document.getElementById('name');
     const name   = (nameEl && nameEl.value.trim()) ? nameEl.value.trim() : "Anonymous";
@@ -362,10 +432,11 @@ async function save() {
     const bar = document.getElementById('notify-bar');
     if (bar) { bar.dataset.isUser = 'true'; bar.textContent = "⏳ 登記中..."; }
 
+    // 圖片上傳到 Supabase Storage（壓縮後最大 100px、品質 60%）
     let imgUrl = null;
     if (file) {
-        const blob = await compressImageToBlob(file, 100, 0.6); // 最大 100px，品質 60%
-        const fileName = `seat_${Date.now()}_${Math.random().toString(36).slice(2,8)}.jpg`;
+        const blob = await compressImageToBlob(file, 100, 0.6);
+        const fileName = `seat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
 
         const { error: uploadError } = await db.storage
             .from('avatars')
@@ -394,29 +465,28 @@ async function save() {
         zone:     zone || null
     };
 
-    console.log('Inserting:', { ...payload, pin: '[hidden]' });
-
-    const { data, error } = await db.from('seats').insert(payload).select();
+    const { error } = await db.from('seats').insert(payload).select();
 
     if (error) {
         console.error('Insert error:', JSON.stringify(error));
         if (bar) bar.textContent = "❌ " + (error.message || '登記失敗，請再試一次');
-    } else {
-        console.log('Insert success');
-        const d = i18n[getLang()];
-        if (bar) bar.textContent = "✨ " + name + d.joined;
-        await loadSeats();
-
-        // 顯示密碼給使用者記住
-        const pinDisplay = document.getElementById('pin-display');
-        if (pinDisplay) pinDisplay.textContent = pin;
-        openModal('pin-modal');
+        return;
     }
+
+    const d = i18n[getLang()];
+    if (bar) bar.textContent = "✨ " + name + d.joined;
+    await loadSeats();
+
+    // 顯示密碼給使用者記住
+    const pinDisplay = document.getElementById('pin-display');
+    if (pinDisplay) pinDisplay.textContent = pin;
+    openModal('pin-modal');
 }
 
-// ────────────────────────────────────────────
-// Load from Supabase
-// ────────────────────────────────────────────
+
+/* ────────────────────────────────────────────
+   10. 從 Supabase 載入座位資料（分批讀取避免逾時）
+   ──────────────────────────────────────────── */
 async function loadSeats() {
     let rows = [];
     let batchStart = 0;
@@ -452,22 +522,20 @@ async function loadSeats() {
     render();
 }
 
-// ────────────────────────────────────────────
-// 輪詢模式（每 30 秒自動重新載入，穩定不斷線）
-// ────────────────────────────────────────────
+// 座位資料每 30 秒自動重新整理一次（輪詢，不用 Realtime 長連線，更穩定）
 function subscribeRealtime() {
     if (realtimeChannel) clearInterval(realtimeChannel);
     realtimeChannel = setInterval(() => loadSeats(), 30000);
-    console.log('Polling mode: refresh every 30s');
 }
 
-// ────────────────────────────────────────────
-// Render（地圖）
-// ────────────────────────────────────────────
+
+/* ────────────────────────────────────────────
+   11. 地圖渲染
+   ──────────────────────────────────────────── */
 function render() {
     let seats = allData[currentDate] || [];
-    const lang  = getLang();
-    const d     = i18n[lang];
+    const lang = getLang();
+    const d = i18n[lang];
 
     // 截圖專用模式：只顯示被選中的人
     if (screenshotMode && screenshotIds.length > 0) {
@@ -481,10 +549,10 @@ function render() {
 
     seats.forEach(s => {
         const node = document.createElement('div');
-        node.className  = 'node';
-        node.dataset.id  = s.id;
+        node.className = 'node';
+        node.dataset.id = s.id;
         node.style.left = s.x + '%';
-        node.style.top  = s.y + '%';
+        node.style.top = s.y + '%';
 
         if (s.img_data) {
             const img = document.createElement('img');
@@ -508,23 +576,21 @@ function render() {
     if (!screenshotMode) renderList();
 }
 
-// ────────────────────────────────────────────
-// Render（名單，支援搜尋過濾）
-// ────────────────────────────────────────────
-let shareMode = false;
-let selectedShareIds = new Set();
 
+/* ────────────────────────────────────────────
+   12. 名單渲染（支援搜尋 / 分享模式勾選）
+   ──────────────────────────────────────────── */
 function renderList() {
     const seats = allData[currentDate] || [];
-    const lang  = getLang();
-    const d     = i18n[lang];
+    const lang = getLang();
+    const d = i18n[lang];
 
     const listEl = document.getElementById('seat-list');
     if (!listEl) return;
     listEl.innerHTML = '';
 
     const searchEl = document.getElementById('search-input');
-    const keyword  = searchEl ? searchEl.value.trim().toLowerCase() : '';
+    const keyword = searchEl ? searchEl.value.trim().toLowerCase() : '';
 
     const filtered = keyword
         ? seats.filter(s => s.name.toLowerCase().includes(keyword))
@@ -534,6 +600,7 @@ function renderList() {
         const item = document.createElement('div');
         item.className = 'seat-item';
 
+        // 分享模式：每一列前面加勾選框
         if (shareMode) {
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -569,6 +636,7 @@ function renderList() {
                 return;
             }
 
+            // 一般模式：點名單項目跳到地圖位置並高亮閃爍
             closeModal('list-modal');
             jumpToSeat(s.id);
         });
@@ -580,23 +648,33 @@ function renderList() {
             btn.onclick = (e) => { e.stopPropagation(); del(s.id); };
             item.appendChild(btn);
         }
+
         listEl.appendChild(item);
     });
 
     if (filtered.length === 0) {
         const p = document.createElement('p');
         p.style.cssText = 'text-align:center;color:rgba(255,255,255,0.4);font-size:13px;margin:20px 0;';
-        p.textContent = keyword ? (lang === 'th' ? 'ไม่พบ' : lang === 'en' ? 'No results' : '找不到符合的暱稱') : d.empty;
+        p.textContent = keyword
+            ? (lang === 'th' ? 'ไม่พบ' : lang === 'en' ? 'No results' : '找不到符合的暱稱')
+            : d.empty;
         listEl.appendChild(p);
     }
 }
 
+
+/* ────────────────────────────────────────────
+   13. 分享模式（勾選座位產生只顯示特定人的連結）
+   ──────────────────────────────────────────── */
 function toggleShareMode() {
     shareMode = !shareMode;
     selectedShareIds.clear();
+
     const toolbar = document.getElementById('share-toolbar');
     const toggleBtn = document.getElementById('ui-share-toggle');
-    if (toolbar) toolbar.style.display = shareMode ? 'block' : 'none';
+
+    if (toolbar) toolbar.classList.toggle('show', shareMode);
+
     if (toggleBtn) {
         const d = i18n[getLang()];
         toggleBtn.textContent = shareMode ? '✕ ' + d.shareModeExit : '📤 ' + d.shareModeEnter;
@@ -604,6 +682,7 @@ function toggleShareMode() {
         toggleBtn.style.color = shareMode ? '#fff' : 'var(--main)';
         toggleBtn.style.border = shareMode ? 'none' : '1px solid var(--main)';
     }
+
     renderList();
 }
 
@@ -627,8 +706,10 @@ function generateShareLink() {
 function copyShareLink() {
     const output = document.getElementById('share-link-output');
     if (!output) return;
+
     output.select();
     output.setSelectionRange(0, 99999);
+
     navigator.clipboard.writeText(output.value).then(() => {
         const lang = getLang();
         alert(lang === 'th' ? '✅ คัดลอกแล้ว' : lang === 'en' ? '✅ Copied!' : '✅ 已複製連結');
@@ -637,9 +718,10 @@ function copyShareLink() {
     });
 }
 
-// ────────────────────────────────────────────
-// 跳到地圖上指定座位並高亮閃爍 + 顯示暱稱
-// ────────────────────────────────────────────
+
+/* ────────────────────────────────────────────
+   14. 地圖座位跳轉 / 暱稱提示框
+   ──────────────────────────────────────────── */
 function jumpToSeat(id) {
     const node = wrapper.querySelector(`.node[data-id="${id}"]`);
     if (!node) return;
@@ -656,10 +738,6 @@ function jumpToSeat(id) {
     setTimeout(() => node.classList.remove('highlight'), 3600);
 }
 
-// ────────────────────────────────────────────
-// 顯示暱稱提示框（出現在點擊的頭像正上方）
-// ────────────────────────────────────────────
-let tooltipTimer = null;
 function showNameTooltip(node, name, duration = 2000) {
     const tooltip = document.getElementById('name-tooltip');
     if (!tooltip) return;
@@ -667,65 +745,25 @@ function showNameTooltip(node, name, duration = 2000) {
     const rect = node.getBoundingClientRect();
     tooltip.textContent = name;
     tooltip.style.left = (rect.left + rect.width / 2) + 'px';
-    tooltip.style.top  = rect.top + 'px';
+    tooltip.style.top = rect.top + 'px';
     tooltip.style.display = 'block';
 
     if (tooltipTimer) clearTimeout(tooltipTimer);
     tooltipTimer = setTimeout(() => { tooltip.style.display = 'none'; }, duration);
 }
 
-// ────────────────────────────────────────────
-// Admin
-// ────────────────────────────────────────────
-function toggleAdmin() {
-    if (!isAdmin) {
-        const pw = prompt("請輸入管理員密碼：");
-        if (pw === "2026") {
-            isAdmin = true;
-            sessionStorage.setItem('admin', 'true');
-            alert("✅ 已進入管理員模式");
-            render();
-        } else if (pw !== null) {
-            alert("❌ 密碼錯誤");
-        }
-    } else {
-        isAdmin = false;
-        sessionStorage.setItem('admin', 'false');
-        alert("已登出管理員模式");
-        render();
-    }
-}
 
-async function del(id) {
-    // 找出該座位是否有上傳圖片，連同 Storage 一起刪除
-    const seat = (allData[currentDate] || []).find(s => s.id === id);
-    if (seat && seat.img_data && seat.img_data.includes('/avatars/')) {
-        const fileName = seat.img_data.split('/avatars/')[1];
-        if (fileName) {
-            await db.storage.from('avatars').remove([fileName]);
-        }
-    }
-
-    const { error } = await db.from('seats').delete().eq('id', id);
-    if (error) console.error('Delete error:', error);
-    else await loadSeats();
-}
-
-
-
-// ────────────────────────────────────────────
-// 我的座位（憑暱稱 + 密碼查詢、修改、刪除）
-// ────────────────────────────────────────────
-let verifiedSeat = null; // 通過驗證後暫存目前操作的座位
-
+/* ────────────────────────────────────────────
+   15. 我的座位（憑暱稱 + 密碼查詢 / 改名 / 刪除）
+   ──────────────────────────────────────────── */
 async function verifyMine() {
     const nameEl = document.getElementById('mine-name');
-    const pinEl  = document.getElementById('mine-pin');
+    const pinEl = document.getElementById('mine-pin');
     const resultEl = document.getElementById('mine-result');
     const d = i18n[getLang()];
 
     const name = nameEl.value.trim();
-    const pin  = pinEl.value.trim();
+    const pin = pinEl.value.trim();
 
     if (!name || !pin) {
         resultEl.innerHTML = `<p style="color:#ff6b6b; font-size:13px;">${d.mineEmptyInput}</p>`;
@@ -742,7 +780,6 @@ async function verifyMine() {
 
     if (error || !data || data.length === 0) {
         resultEl.innerHTML = `<p style="color:#ff6b6b; font-size:13px;">${d.mineNotFound}</p>`;
-        verifiedSeat = null;
         return;
     }
 
@@ -781,6 +818,7 @@ async function editMySeat(seat) {
     const d = i18n[getLang()];
     const newName = prompt(d.minePromptNewName, seat.name);
     if (newName === null) return;
+
     const trimmed = newName.trim();
     if (!trimmed) { alert(d.mineNameEmpty); return; }
 
@@ -792,11 +830,12 @@ async function editMySeat(seat) {
 
     if (error) {
         alert(d.mineUpdateFail + error.message);
-    } else {
-        alert(d.mineUpdateOk);
-        await loadSeats();
-        closeModal('mine-modal');
+        return;
     }
+
+    alert(d.mineUpdateOk);
+    await loadSeats();
+    closeModal('mine-modal');
 }
 
 async function deleteMySeat(seat) {
@@ -817,24 +856,61 @@ async function deleteMySeat(seat) {
 
     if (error) {
         alert(d.mineDeleteFail + error.message);
-    } else {
-        alert(d.mineDeleteOk);
-        await loadSeats();
-        closeModal('mine-modal');
+        return;
     }
+
+    alert(d.mineDeleteOk);
+    await loadSeats();
+    closeModal('mine-modal');
 }
 
-// ────────────────────────────────────────────
-// 聊天室（按場次分區，輪詢更新）
-// ────────────────────────────────────────────
-let chatPollTimer = null;
 
+/* ────────────────────────────────────────────
+   16. Admin 模式
+   ──────────────────────────────────────────── */
+function toggleAdmin() {
+    if (!isAdmin) {
+        const pw = prompt("請輸入管理員密碼：");
+        if (pw === "2026") {
+            isAdmin = true;
+            sessionStorage.setItem('admin', 'true');
+            alert("✅ 已進入管理員模式");
+            render();
+        } else if (pw !== null) {
+            alert("❌ 密碼錯誤");
+        }
+        return;
+    }
+
+    isAdmin = false;
+    sessionStorage.setItem('admin', 'false');
+    alert("已登出管理員模式");
+    render();
+}
+
+async function del(id) {
+    // 找出該座位是否有上傳圖片，連同 Storage 一起刪除
+    const seat = (allData[currentDate] || []).find(s => s.id === id);
+    if (seat && seat.img_data && seat.img_data.includes('/avatars/')) {
+        const fileName = seat.img_data.split('/avatars/')[1];
+        if (fileName) await db.storage.from('avatars').remove([fileName]);
+    }
+
+    const { error } = await db.from('seats').delete().eq('id', id);
+    if (error) console.error('Delete error:', error);
+    else await loadSeats();
+}
+
+
+/* ────────────────────────────────────────────
+   17. 區域聊天室（按場次 + 區域分區，輪詢更新）
+   ──────────────────────────────────────────── */
 function openChat() {
     document.getElementById('chat-drawer').classList.add('open');
     document.getElementById('chat-overlay').classList.add('show');
     loadChatMessages();
     if (chatPollTimer) clearInterval(chatPollTimer);
-    chatPollTimer = setInterval(loadChatMessages, 8000); // 聊天室更新頻率比座位快一些
+    chatPollTimer = setInterval(loadChatMessages, 8000);
 }
 
 function closeChat() {
@@ -861,7 +937,6 @@ async function loadChatMessages() {
     // zone 為空（查看全部區域）時不加篩選，顯示所有訊息
 
     const { data, error } = await query;
-
     if (error) { console.error('Chat load error:', error); return; }
 
     renderChatMessages(data || []);
@@ -872,7 +947,6 @@ function renderChatMessages(messages) {
     if (!container) return;
 
     const wasAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 30;
-
     container.innerHTML = '';
     const d = i18n[getLang()];
 
@@ -910,13 +984,11 @@ function renderChatMessages(messages) {
         container.appendChild(item);
     });
 
-    if (wasAtBottom) {
-        container.scrollTop = container.scrollHeight;
-    }
+    if (wasAtBottom) container.scrollTop = container.scrollHeight;
 }
 
 async function sendChatMessage() {
-    const nameEl  = document.getElementById('chat-name');
+    const nameEl = document.getElementById('chat-name');
     const inputEl = document.getElementById('chat-input');
     const sendZoneSelect = document.getElementById('chat-send-zone-select');
     const d = i18n[getLang()];
@@ -953,11 +1025,10 @@ async function deleteChatMessage(id) {
     else await loadChatMessages();
 }
 
-// ────────────────────────────────────────────
-// 全場聊天室（不分場次、不分區域，所有人共用）
-// ────────────────────────────────────────────
-let globalChatPollTimer = null;
 
+/* ────────────────────────────────────────────
+   18. 全場聊天室（不分場次、不分區域，所有人共用）
+   ──────────────────────────────────────────── */
 function openGlobalChat() {
     document.getElementById('global-chat-drawer').classList.add('open');
     document.getElementById('global-chat-overlay').classList.add('show');
@@ -991,7 +1062,6 @@ function renderGlobalChatMessages(messages) {
     if (!container) return;
 
     const wasAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 30;
-
     container.innerHTML = '';
     const d = i18n[getLang()];
 
@@ -1028,13 +1098,11 @@ function renderGlobalChatMessages(messages) {
         container.appendChild(item);
     });
 
-    if (wasAtBottom) {
-        container.scrollTop = container.scrollHeight;
-    }
+    if (wasAtBottom) container.scrollTop = container.scrollHeight;
 }
 
 async function sendGlobalChatMessage() {
-    const nameEl  = document.getElementById('global-chat-name');
+    const nameEl = document.getElementById('global-chat-name');
     const inputEl = document.getElementById('global-chat-input');
     const d = i18n[getLang()];
 
@@ -1069,7 +1137,7 @@ async function deleteGlobalChatMessage(id) {
     else await loadGlobalChatMessages();
 }
 
-// Enter 鍵送出訊息
+// Enter 鍵送出訊息（兩個聊天室都支援）
 document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('chat-input');
     if (chatInput) {
@@ -1086,36 +1154,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ────────────────────────────────────────────
-// 點擊背景關閉 Modal
-// ────────────────────────────────────────────
-document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.remove('show');
-            if (modal.id === 'modal') {
-                ['name','zone','img','emoji'].forEach(i => { const el = document.getElementById(i); if(el) el.value=''; });
-            }
-        }
-    });
-});
 
-// ────────────────────────────────────────────
-// Init
-// ────────────────────────────────────────────
+/* ────────────────────────────────────────────
+   19. 截圖專用模式（透過分享連結進入）
+   ──────────────────────────────────────────── */
+function enterScreenshotMode() {
+    document.body.classList.add('screenshot-mode');
+
+    const hideIds = ['ui-chat-toggle', 'ui-global-chat-toggle', 'date-select'];
+    hideIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+
+    // 隱藏語言切換、stats-area 的按鈕（List / 我的座位）
+    document.querySelectorAll('.lang-group, .stats-area, .control-row').forEach(el => {
+        el.style.display = 'none';
+    });
+
+    const header = document.querySelector('header');
+    if (header) header.style.borderRadius = '18px';
+}
+
+
+/* ────────────────────────────────────────────
+   20. 初始化
+   ──────────────────────────────────────────── */
 window.onload = async () => {
     setLang(getLang());
 
     if (screenshotMode) {
         enterScreenshotMode();
+        if (screenshotDate) currentDate = screenshotDate;
     }
 
     const bar = document.getElementById('notify-bar');
     if (bar) bar.textContent = i18n[getLang()].loading;
-
-    if (screenshotMode && screenshotDate) {
-        currentDate = screenshotDate;
-    }
 
     await loadSeats();
 
@@ -1129,28 +1203,3 @@ window.onload = async () => {
         }
     }
 };
-
-// ────────────────────────────────────────────
-// 進入截圖專用模式：隱藏所有按鈕與互動 UI
-// ────────────────────────────────────────────
-function enterScreenshotMode() {
-    document.body.classList.add('screenshot-mode');
-
-    const hideIds = [
-        'ui-chat-toggle', 'ui-global-chat-toggle',
-        'date-select',
-    ];
-    hideIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-    });
-
-    // 隱藏語言切換、stats-area 的按鈕（List / 我的座位）
-    document.querySelectorAll('.lang-group, .stats-area, .control-row').forEach(el => {
-        el.style.display = 'none';
-    });
-
-    // 隱藏 header 的場次/語言列，只保留標題
-    const header = document.querySelector('header');
-    if (header) header.style.borderRadius = '18px';
-}
