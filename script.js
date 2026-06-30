@@ -1344,6 +1344,25 @@ function enterScreenshotMode() {
 
 
 /* ────────────────────────────────────────────
+   19-2. 依照座位圖片真實比例，設定地圖視窗高度
+   ──────────────────────────────────────────── */
+function syncMapViewportHeight() {
+    const seatImg = document.getElementById('seat-img');
+    if (!seatImg || !seatImg.naturalWidth) return;
+
+    const ratio = seatImg.naturalHeight / seatImg.naturalWidth;
+    const width = mapViewport.clientWidth;
+    mapViewport.style.height = (width * ratio) + 'px';
+
+    // 視窗尺寸變動後，目前的縮放位移可能超出新邊界，重新夾回合理範圍
+    clampMapTranslate();
+    applyMapTransform();
+}
+
+window.addEventListener('resize', syncMapViewportHeight);
+
+
+/* ────────────────────────────────────────────
    20. 初始化
    ──────────────────────────────────────────── */
 window.onload = async () => {
@@ -1356,6 +1375,14 @@ window.onload = async () => {
 
     const bar = document.getElementById('notify-bar');
     if (bar) bar.textContent = i18n[getLang()].loading;
+
+    // 等座位圖實際載入完成後，才能正確量測圖片比例
+    const seatImg = document.getElementById('seat-img');
+    if (seatImg.complete) {
+        syncMapViewportHeight();
+    } else {
+        seatImg.addEventListener('load', syncMapViewportHeight);
+    }
 
     await loadSeats();
 
